@@ -2763,11 +2763,13 @@ name = "visor"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
+ "base64",
  "chrono",
  "clap",
  "clap_complete",
  "comfy-table",
  "dirs",
+ "getrandom 0.4.3",
  "keyring",
  "mockito",
  "predicates",
@@ -2775,6 +2777,7 @@ dependencies = [
  "rpassword",
  "serde",
  "serde_json",
+ "sha2",
  "tempfile",
  "thiserror",
  "toml",

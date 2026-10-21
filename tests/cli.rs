@@ -31,6 +31,7 @@ impl Harness {
     fn visor(&self) -> Command {
         let mut cmd = Command::new(assert_cmd::cargo::cargo_bin!("visor"));
         cmd.env("VISOR_API_URL", self.server.url())
+            .env("VISOR_AUTH_URL", self.server.url())
             .env("VISOR_CONFIG_DIR", self.config.path())
             .env("VISOR_CREDENTIAL_STORE", "file")
             .env("VISOR_TOKEN", TOKEN)

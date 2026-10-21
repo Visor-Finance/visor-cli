@@ -54,6 +54,17 @@ fn the_cli_covers_exactly_the_operations_in_the_spec() {
 }
 
 #[test]
+fn the_browser_login_urls_match_the_spec() {
+    let spec = spec();
+    let flow = &spec["components"]["securitySchemes"]["visor_cli_oauth"]["flows"]["authorizationCode"];
+    let base = visor::oauth::DEFAULT_AUTH_URL;
+
+    assert_eq!(flow["authorizationUrl"], format!("{base}/oauth/authorize"));
+    assert_eq!(flow["tokenUrl"], format!("{base}/oauth/token"));
+    assert_eq!(flow["refreshUrl"], format!("{base}/oauth/token"));
+}
+
+#[test]
 fn the_spec_still_uses_bearer_personal_tokens() {
     let spec = spec();
     let scheme = &spec["components"]["securitySchemes"]["personal_api_token"];

@@ -24,19 +24,20 @@ Shell completions: `visor completions zsh > "${fpath[1]}/_visor"` (also `bash`, 
 
 ## Log in
 
-1. Create a personal API token in [Settings > Connected apps](https://dashboard.visorfinance.app/settings/connected_apps). Pick **Read only**, or **Read and record transactions** to use `tx add`, `tx edit`, and `tx rm`.
-2. Run `visor auth login` and paste it. The CLI checks the token, then stores it in the system keychain.
-
 ```bash
-visor auth login                         # hidden prompt
-visor auth login --with-token < token    # from a file or a secret manager
-visor auth status                        # who you are and where the token came from
-visor auth logout                        # removes the stored token; revoke it in Settings too
+visor auth login
 ```
 
-`VISOR_TOKEN` overrides the stored token, which suits CI and one-off scripts. On a machine without a keychain (a headless Linux server, for example), set `VISOR_CREDENTIAL_STORE=file` to keep the token in `credentials.json` in the config directory, readable only by you.
+The CLI opens Visor in your browser. Log in, choose **Read only** or **Read and record transactions** (needed for `tx add`, `tx edit`, and `tx rm`), and approve. The CLI stores the login in the system keychain and refreshes it as it expires. It appears as **Visor CLI** in [Settings > Connected apps](https://dashboard.visorfinance.app/settings/connected_apps); revoke it there to end it.
 
-Browser login with OAuth is planned in ENG-2592.
+```bash
+visor auth login --no-browser            # print the login page URL instead of opening it
+visor auth login --with-token < token    # a personal API token, for machines without a browser
+visor auth status                        # who you are and how you are logged in
+visor auth logout                        # removes the stored login
+```
+
+On a server or in CI, create a personal API token in Settings and pass it with `--with-token` or `VISOR_TOKEN`. `VISOR_TOKEN` overrides the stored login. On a machine without a keychain (a headless Linux server, for example), set `VISOR_CREDENTIAL_STORE=file` to keep the login in `credentials.json` in the config directory, readable only by you.
 
 ## Use
 

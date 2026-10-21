@@ -5,12 +5,14 @@ use clap_complete::Shell;
 
 use crate::client::DEFAULT_API_URL;
 use crate::input;
+use crate::oauth::DEFAULT_AUTH_URL;
 
 const AFTER_HELP: &str = "\
 Authentication:
-  Run `visor auth login` with a personal API token from
-  https://dashboard.visorfinance.app/settings/connected_apps (Premium plan).
-  VISOR_TOKEN overrides the stored token.
+  Run `visor auth login` to log in through the browser (Premium plan). On a
+  machine without a browser, use a personal API token from
+  https://dashboard.visorfinance.app/settings/connected_apps with
+  `visor auth login --with-token`. VISOR_TOKEN overrides the stored login.
 
 Exit codes:
   0 success, 1 failure, 2 invalid usage, 3 not authenticated or not allowed,
@@ -41,11 +43,15 @@ pub struct Global {
     /// API base URL
     #[arg(long, global = true, env = "VISOR_API_URL", default_value = DEFAULT_API_URL, hide = true)]
     pub api_url: String,
+
+    /// Base URL of the browser login (OAuth authorization server)
+    #[arg(long, global = true, env = "VISOR_AUTH_URL", default_value = DEFAULT_AUTH_URL, hide = true)]
+    pub auth_url: String,
 }
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// Log in, log out, and check the stored token
+    /// Log in, log out, and check the stored login
     #[command(subcommand)]
     Auth(AuthCommand),
 
@@ -118,19 +124,29 @@ pub enum Command {
 
 #[derive(Debug, Clone, Copy, Subcommand)]
 pub enum AuthCommand {
-    /// Store a personal API token, after checking that it works
+    /// Log in through the browser, or with a personal API token
     #[command(after_help = "\
-Create a token at https://dashboard.visorfinance.app/settings/connected_apps.
-Without --with-token, the token is read from a hidden prompt.
+Without options, the CLI opens Visor in your browser. Approve the login there
+and choose what the CLI can do. The login refreshes itself; revoke it in
+Settings > Connected apps (Visor CLI).
 
-Example: visor auth login --with-token < token.txt")]
+On a machine without a browser, use a personal API token instead. Create it at
+https://dashboard.visorfinance.app/settings/connected_apps.
+
+Examples:
+  visor auth login
+  visor auth login --with-token < token.txt")]
     Login {
-        /// Read the token from standard input
+        /// Use a personal API token, read from standard input or a hidden prompt
         #[arg(long)]
         with_token: bool,
+
+        /// Print the login page URL instead of opening a browser
+        #[arg(long, conflicts_with = "with_token")]
+        no_browser: bool,
     },
 
-    /// Remove the stored token
+    /// Remove the stored login
     Logout,
 
     /// Show which token is in use and whom it belongs to

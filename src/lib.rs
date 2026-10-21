@@ -12,5 +12,6 @@ pub mod credentials;
 pub mod error;
 pub mod input;
 pub mod models;
+pub mod oauth;
 pub mod output;
 pub mod resolve;

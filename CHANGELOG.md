@@ -5,6 +5,10 @@ people who use the CLI: what they can do now, what changed, what to watch for.
 
 ## Unreleased
 
+- `visor auth login` now logs in through the browser: approve the login in Visor and choose its access. The login refreshes itself and appears as **Visor CLI** in Settings > Connected apps.
+- `visor auth login --no-browser` prints the login page URL instead of opening a browser.
+- **Changed:** `visor auth login` without options no longer prompts for a personal API token. Use `visor auth login --with-token`, which reads it from standard input or a hidden prompt. Stored tokens, `--with-token < file`, and `VISOR_TOKEN` work as before.
+
 ## 0.1.0 - 2026-10-21
 
 First release.

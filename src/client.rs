@@ -1,6 +1,8 @@
 //! HTTP transport for the Visor personal API: authentication, retries, and
 //! the error envelope.
 
+use std::fmt;
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
@@ -35,11 +37,35 @@ impl Default for RetryPolicy {
     }
 }
 
+/// Supplies the bearer token, and a new one when the API says it expired.
+pub trait TokenSource: fmt::Debug + Send + Sync {
+    /// The bearer to send now.
+    fn bearer(&self) -> Result<String>;
+
+    /// Called after the API answered `TOKEN_EXPIRED` for `rejected`. Returns
+    /// the bearer to retry with, or `None` when this source cannot refresh.
+    fn refresh(&self, rejected: &str) -> Result<Option<String>>;
+}
+
+/// A token that never changes: a personal API token or `VISOR_TOKEN`.
+#[derive(Debug)]
+struct StaticToken(String);
+
+impl TokenSource for StaticToken {
+    fn bearer(&self) -> Result<String> {
+        Ok(self.0.clone())
+    }
+
+    fn refresh(&self, _rejected: &str) -> Result<Option<String>> {
+        Ok(None)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Client {
     http: Http,
     base_url: String,
-    token: String,
+    token: Arc<dyn TokenSource>,
     retry: RetryPolicy,
 }
 
@@ -52,17 +78,14 @@ pub struct Reply {
 
 impl Client {
     pub fn new(base_url: &str, token: impl Into<String>) -> Result<Self> {
-        let http = Http::builder()
-            .user_agent(USER_AGENT)
-            .connect_timeout(Duration::from_secs(10))
-            .timeout(Duration::from_secs(60))
-            .build()
-            .map_err(Error::Network)?;
+        Self::with_source(base_url, Arc::new(StaticToken(token.into())))
+    }
 
+    pub fn with_source(base_url: &str, token: Arc<dyn TokenSource>) -> Result<Self> {
         Ok(Self {
-            http,
+            http: http()?,
             base_url: base_url.trim_end_matches('/').to_owned(),
-            token: token.into(),
+            token,
             retry: RetryPolicy::default(),
         })
     }
@@ -107,12 +130,14 @@ impl Client {
         // 404 for a delete that worked, so only a 429 (never processed) retries it.
         let retries_server_errors = *method != Method::DELETE;
         let mut attempt = 0;
+        let mut refreshed = false;
 
         loop {
+            let bearer = self.token.bearer()?;
             let mut request = self
                 .http
                 .request(method.clone(), format!("{}{path}", self.base_url))
-                .bearer_auth(&self.token)
+                .bearer_auth(&bearer)
                 .header(ACCEPT, "application/json")
                 .query(query);
             if let Some(body) = body {
@@ -125,6 +150,19 @@ impl Client {
             let can_retry = attempt < self.retry.max_retries;
             match request.send() {
                 Ok(response) if response.status().is_success() => return reply(response),
+                Ok(response) if response.status() == StatusCode::UNAUTHORIZED => {
+                    // An expired access token is refreshed once and the request
+                    // sent again; the API never processed the rejected one.
+                    let error = api_error(response);
+                    if refreshed || error.api_code() != Some("TOKEN_EXPIRED") {
+                        return Err(error);
+                    }
+                    match self.token.refresh(&bearer)? {
+                        Some(_) => refreshed = true,
+                        None => return Err(error),
+                    }
+                    continue;
+                }
                 Ok(response) => {
                     let status = response.status();
                     let wait = if status == StatusCode::TOO_MANY_REQUESTS {
@@ -152,6 +190,16 @@ impl Client {
     fn backoff(&self, attempt: u32) -> Duration {
         self.retry.base_delay.saturating_mul(2u32.saturating_pow(attempt))
     }
+}
+
+/// The HTTP client every request uses, API or OAuth.
+pub fn http() -> Result<Http> {
+    Http::builder()
+        .user_agent(USER_AGENT)
+        .connect_timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(60))
+        .build()
+        .map_err(Error::Network)
 }
 
 fn is_transient(error: &reqwest::Error) -> bool {
