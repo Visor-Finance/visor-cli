@@ -1,0 +1,63 @@
+[package]
+name = "visor"
+version = "0.1.0"
+edition = "2024"
+description = "Command-line interface for the Visor personal API"
+license = "MIT"
+homepage = "https://docs.visorfinance.app"
+repository = "https://github.com/Visor-Finance/visor-cli"
+readme = "README.md"
+keywords = ["visor", "finance", "cli", "open-finance"]
+categories = ["command-line-utilities"]
+publish = false
+
+[[bin]]
+name = "visor"
+path = "src/main.rs"
+
+[dependencies]
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std", "serde"] }
+clap = { version = "4.6.7", features = ["derive", "env", "wrap_help"] }
+clap_complete = "4.6.11"
+comfy-table = "8.0.1"
+dirs = "7.0.0"
+keyring = "4.2.0"
+reqwest = { version = "0.13.5", default-features = false, features = ["blocking", "gzip", "json", "query", "rustls", "system-proxy"] }
+rpassword = "7.5.4"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+thiserror = "2.0.21"
+toml = "1.1.8"
+uuid = { version = "1.28.0", features = ["v4"] }
+
+[dev-dependencies]
+assert_cmd = "2.2.2"
+mockito = "1.7.2"
+predicates = "3.1.4"
+tempfile = "3.27.0"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
+
+# `publish = false` keeps the crate off crates.io; dist still releases the binary.
+[package.metadata.dist]
+dist = true

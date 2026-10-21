@@ -1,0 +1,28 @@
+# Fails when the backend's generated spec differs from openapi/openapi.json,
+# so a new or changed endpoint becomes a visible task for the CLI.
+name: OpenAPI drift
+
+on:
+  schedule:
+    - cron: "0 9 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the backend spec
+        env:
+          # Fine-grained token with read access to Visor-Finance/visor contents
+          GH_TOKEN: ${{ secrets.VISOR_REPO_TOKEN }}
+        run: scripts/sync-openapi.sh --remote
+      - name: Compare
+        run: |
+          if ! git diff --exit-code -- openapi/openapi.json; then
+            echo "::error::The API spec changed. Run scripts/sync-openapi.sh, update the CLI, and commit."
+            exit 1
+          fi

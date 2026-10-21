@@ -1,0 +1,237 @@
+//! Errors and the exit codes they map to.
+
+use std::fmt;
+use std::process::ExitCode;
+
+use serde::Deserialize;
+use serde_json::Value;
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
+/// Exit codes are part of the CLI contract; scripts branch on them.
+pub mod exit {
+    pub const FAILURE: u8 = 1;
+    pub const USAGE: u8 = 2;
+    pub const AUTH: u8 = 3;
+    pub const NOT_FOUND: u8 = 4;
+    pub const REJECTED: u8 = 5;
+    pub const UNAVAILABLE: u8 = 6;
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("{0}")]
+    Api(ApiError),
+
+    #[error("could not reach the Visor API: {0}")]
+    Network(#[source] reqwest::Error),
+
+    #[error("not logged in. Run `visor auth login` or set VISOR_TOKEN")]
+    NotLoggedIn,
+
+    #[error("{0}")]
+    Usage(String),
+
+    #[error("{0}")]
+    Credentials(String),
+
+    #[error("{context}: {source}")]
+    Io {
+        context: String,
+        #[source]
+        source: std::io::Error,
+    },
+
+    #[error("unexpected response from the Visor API: {0}")]
+    Decode(String),
+}
+
+impl Error {
+    pub fn usage(message: impl Into<String>) -> Self {
+        Self::Usage(message.into())
+    }
+
+    pub fn io(context: impl Into<String>, source: std::io::Error) -> Self {
+        Self::Io {
+            context: context.into(),
+            source,
+        }
+    }
+
+    #[must_use]
+    pub fn exit_code(&self) -> ExitCode {
+        ExitCode::from(self.exit_status())
+    }
+
+    /// The numeric exit status; see [`exit`].
+    #[must_use]
+    pub fn exit_status(&self) -> u8 {
+        match self {
+            Self::Api(api) => api.exit_code(),
+            Self::Network(_) => exit::UNAVAILABLE,
+            Self::NotLoggedIn => exit::AUTH,
+            Self::Usage(_) => exit::USAGE,
+            Self::Credentials(_) | Self::Io { .. } | Self::Decode(_) => exit::FAILURE,
+        }
+    }
+
+    /// Returns the API error code, such as `NOT_FOUND`, when there is one.
+    #[must_use]
+    pub fn api_code(&self) -> Option<&str> {
+        match self {
+            Self::Api(api) => Some(&api.code),
+            _ => None,
+        }
+    }
+}
+
+/// One error from the API envelope `{"errors": [...]}`.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ApiError {
+    #[serde(skip)]
+    pub status: u16,
+    pub code: String,
+    pub message: String,
+    #[serde(default)]
+    pub details: Value,
+    #[serde(default)]
+    pub request_id: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct Envelope {
+    errors: Vec<ApiError>,
+}
+
+impl ApiError {
+    /// Parses an error body. A body outside the envelope still yields an
+    /// error that carries the HTTP status.
+    #[must_use]
+    pub fn from_body(status: u16, body: &str, request_id: Option<String>) -> Self {
+        let parsed = serde_json::from_str::<Envelope>(body)
+            .ok()
+            .and_then(|envelope| envelope.errors.into_iter().next());
+
+        match parsed {
+            Some(mut error) => {
+                error.status = status;
+                error.request_id = error.request_id.or(request_id);
+                error
+            }
+            None => Self {
+                status,
+                code: format!("HTTP_{status}"),
+                message: format!("the API answered with HTTP {status}"),
+                details: Value::Null,
+                request_id,
+            },
+        }
+    }
+
+    fn exit_code(&self) -> u8 {
+        match self.status {
+            401 | 403 => exit::AUTH,
+            404 => exit::NOT_FOUND,
+            400 | 406 | 409 | 422 => exit::REJECTED,
+            429 | 500.. => exit::UNAVAILABLE,
+            _ => exit::FAILURE,
+        }
+    }
+
+    fn hint(&self) -> Option<String> {
+        let hint = match self.code.as_str() {
+            "UNAUTHENTICATED" | "INVALID_TOKEN" => {
+                "Check the token, then run `visor auth login` again.".to_owned()
+            }
+            "TOKEN_EXPIRED" | "TOKEN_REVOKED" => {
+                format!("Create a new token at {TOKENS_URL} and run `visor auth login`.")
+            }
+            "PLAN_REQUIRED" => "The personal API needs an active Premium plan.".to_owned(),
+            "INSUFFICIENT_SCOPE" => {
+                let scope = self.details["required_scope"].as_str().unwrap_or("another scope");
+                format!("This token lacks `{scope}`. Create a token with that access at {TOKENS_URL}.")
+            }
+            "RATE_LIMITED" => match self.details["retry_after_seconds"].as_u64() {
+                Some(seconds) => format!("Try again in {seconds} seconds."),
+                None => "Try again in a minute.".to_owned(),
+            },
+            _ => return None,
+        };
+        Some(hint)
+    }
+}
+
+pub const TOKENS_URL: &str = "https://dashboard.visorfinance.app/settings/connected_apps";
+
+impl fmt::Display for ApiError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} ({})", self.message, self.code)?;
+
+        if let Some(errors) = self.details["errors"].as_array() {
+            for error in errors {
+                let field = error["field"].as_str().unwrap_or("body");
+                let message = error["message"].as_str().unwrap_or("is invalid");
+                write!(f, "\n  {field}: {message}")?;
+            }
+        }
+        for key in ["field", "parameter", "reason"] {
+            if let Some(value) = self.details[key].as_str() {
+                write!(f, "\n  {key}: {value}")?;
+            }
+        }
+        if let Some(hint) = self.hint() {
+            write!(f, "\n{hint}")?;
+        }
+        if let Some(request_id) = &self.request_id {
+            write!(f, "\nRequest ID: {request_id}")?;
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_the_error_envelope() {
+        let body = r#"{"errors":[{"code":"INSUFFICIENT_SCOPE","message":"Missing scope.","details":{"required_scope":"pfm:transactions:write"},"request_id":"abc"}]}"#;
+        let error = ApiError::from_body(403, body, None);
+
+        assert_eq!(error.code, "INSUFFICIENT_SCOPE");
+        assert_eq!(error.status, 403);
+        let text = error.to_string();
+        assert!(text.contains("pfm:transactions:write"), "{text}");
+        assert!(text.contains("Request ID: abc"), "{text}");
+    }
+
+    #[test]
+    fn falls_back_to_the_status_when_the_body_is_not_an_envelope() {
+        let error = ApiError::from_body(502, "<html>bad gateway</html>", Some("req".into()));
+
+        assert_eq!(error.code, "HTTP_502");
+        assert_eq!(error.request_id.as_deref(), Some("req"));
+        assert_eq!(Error::Api(error).exit_status(), exit::UNAVAILABLE);
+    }
+
+    #[test]
+    fn lists_validation_errors() {
+        let body = r#"{"errors":[{"code":"VALIDATION_FAILED","message":"Invalid body.","details":{"errors":[{"field":"amount","message":"must be positive"}]}}]}"#;
+        let text = ApiError::from_body(422, body, None).to_string();
+
+        assert!(text.contains("amount: must be positive"), "{text}");
+    }
+
+    #[test]
+    fn maps_statuses_to_exit_codes() {
+        let code = |status| Error::Api(ApiError::from_body(status, "", None)).exit_status();
+
+        assert_eq!(code(401), exit::AUTH);
+        assert_eq!(code(403), exit::AUTH);
+        assert_eq!(code(404), exit::NOT_FOUND);
+        assert_eq!(code(409), exit::REJECTED);
+        assert_eq!(code(422), exit::REJECTED);
+        assert_eq!(code(429), exit::UNAVAILABLE);
+        assert_eq!(code(500), exit::UNAVAILABLE);
+    }
+}
