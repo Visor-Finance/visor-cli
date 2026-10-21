@@ -16,3 +16,7 @@ Rust CLI for the Visor personal API (`https://api.visorfinance.app/v1`). The API
 ```bash
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 ```
+
+## Release
+
+Use the `release` skill (`.claude/skills/release/SKILL.md`). Add user-facing changes under `## Unreleased` in `CHANGELOG.md` as you make them.
