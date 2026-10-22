@@ -24,6 +24,9 @@ use crate::output::{self, Format};
 use crate::{input, resolve};
 
 pub fn run(cli: Cli) -> Result<()> {
+    if cli.global.debug {
+        crate::debug::enable();
+    }
     let format = if cli.global.json {
         Format::Json
     } else {
@@ -53,6 +56,15 @@ pub fn run(cli: Cli) -> Result<()> {
             return auth::status(&store, &Config::load(&config_dir)?, &cli.global, format);
         }
         Command::Doctor => return doctor::run(&cli.global, format),
+        Command::Open { page, print } => {
+            // Like `gh browse`: print the URL when asked or when no browser opens.
+            if print || !crate::browser::open(page.url()) {
+                output::line(page.url())?;
+            } else {
+                output::note(&format!("Opening {} in your browser.", page.url()));
+            }
+            return Ok(());
+        }
         command => command,
     };
 
@@ -78,7 +90,11 @@ pub fn run(cli: Cli) -> Result<()> {
         Command::Connections(command) => resources::connections(&ctx, command),
         Command::Overview => resources::overview(&ctx),
         Command::Notifications(command) => resources::notifications(&ctx, command),
-        Command::Auth(_) | Command::Whoami | Command::Doctor | Command::Completions { .. } => {
+        Command::Auth(_)
+        | Command::Whoami
+        | Command::Doctor
+        | Command::Open { .. }
+        | Command::Completions { .. } => {
             unreachable!("handled above")
         }
     }

@@ -6,7 +6,6 @@
 
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
-use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -78,7 +77,7 @@ pub fn login(auth_url: &str, open_browser: bool) -> Result<Credential> {
 
     // Like `fly auth login`: say what opens, and give the URL a line of its
     // own so it can be copied to a browser elsewhere on this machine.
-    if open_browser && open_in_browser(url.as_str()) {
+    if open_browser && crate::browser::open(url.as_str()) {
         output::note("Opening the Visor login page in your browser:\n");
     } else {
         output::note("Open this page in a browser on this machine and approve the login:\n");
@@ -112,29 +111,6 @@ fn authorize_url(auth_url: &str, redirect_uri: &str, challenge: &str, state: &st
         .append_pair("code_challenge_method", "S256")
         .append_pair("state", state);
     Ok(url)
-}
-
-fn open_in_browser(url: &str) -> bool {
-    let mut command = if cfg!(target_os = "macos") {
-        let mut command = Command::new("open");
-        command.arg(url);
-        command
-    } else if cfg!(windows) {
-        // `start` would split the URL at `&`; the URL handler takes it whole.
-        let mut command = Command::new("rundll32");
-        command.args(["url.dll,FileProtocolHandler", url]);
-        command
-    } else {
-        let mut command = Command::new("xdg-open");
-        command.arg(url);
-        command
-    };
-    command
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .is_ok()
 }
 
 /// What the browser sent to the callback.
@@ -334,13 +310,28 @@ fn exchange(auth_url: &str, form: &[(&str, &str)]) -> Result<TokenResponse> {
 
 fn exchange_with(auth_url: &str, form: &[(&str, &str)]) -> Result<TokenResponse, ExchangeError> {
     let url = format!("{}/oauth/token", auth_url.trim_end_matches('/'));
-    let response = client::http()
+    let started = Instant::now();
+    let sent = client::http()
         .map_err(ExchangeError::Other)?
-        .post(url)
+        .post(&url)
         .header(reqwest::header::ACCEPT, "application/json")
         .form(form)
-        .send()
-        .map_err(|error| ExchangeError::Other(Error::Network(error)))?;
+        .send();
+    let grant = form
+        .iter()
+        .find(|(key, _)| *key == "grant_type")
+        .map_or("", |(_, value)| *value);
+    let outcome = sent.as_ref().map_or_else(ToString::to_string, |response| {
+        response.status().as_str().to_owned()
+    });
+    crate::debug::request(
+        "POST",
+        &format!("{url} ({grant})"),
+        &outcome,
+        started.elapsed(),
+        None,
+    );
+    let response = sent.map_err(|error| ExchangeError::Other(Error::Network(error)))?;
 
     let status = response.status();
     let text = response

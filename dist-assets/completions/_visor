@@ -1,0 +1,2797 @@
+#compdef visor
+
+autoload -U is-at-least
+
+_visor() {
+    typeset -A opt_args
+    typeset -a _arguments_options
+    local ret=1
+
+    if is-at-least 5.2; then
+        _arguments_options=(-s -S -C)
+    else
+        _arguments_options=(-s -C)
+    fi
+
+    local context curcontext="$curcontext" state line
+    _arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_visor_commands" \
+"*::: :->visor" \
+&& ret=0
+    case $state in
+    (visor)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-command-$line[1]:"
+        case $line[1] in
+            (auth)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__auth_commands" \
+"*::: :->auth" \
+&& ret=0
+
+    case $state in
+    (auth)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-auth-command-$line[1]:"
+        case $line[1] in
+            (login)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--with-token[Use a personal API token, read from standard input or a hidden prompt]' \
+'(--with-token)--no-browser[Print the login page URL instead of opening a browser]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(logout)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__auth__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-auth-help-command-$line[1]:"
+        case $line[1] in
+            (login)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(logout)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(whoami)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(doctor)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(open)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--print[Print the URL instead of opening it]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'::page:((dashboard\:""
+transactions\:""
+accounts\:""
+cards\:""
+cashflow\:""
+projection\:""
+recurring\:""
+categories\:""
+goals\:""
+investments\:""
+settings\:""
+tokens\:"Settings > Connected apps\: personal API tokens and the Visor CLI login"
+docs\:"The personal API and CLI documentation"
+releases\:"The CLI releases and their changelog"))' \
+&& ret=0
+;;
+(me)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(spaces)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__spaces_commands" \
+"*::: :->spaces" \
+&& ret=0
+
+    case $state in
+    (spaces)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-spaces-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(ls)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(use)
+_arguments "${_arguments_options[@]}" : \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':space -- Space name or ID:_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__spaces__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-spaces-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(use)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(transactions)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__transactions_commands" \
+"*::: :->transactions" \
+&& ret=0
+
+    case $state in
+    (transactions)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-transactions-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'--from=[First day to include, YYYY-MM-DD (Brasília time)]:FROM:_default' \
+'--to=[Last day to include, YYYY-MM-DD (Brasília time) \[default\: today\]]:TO:_default' \
+'--account=[Account name or ID]:ACCOUNT:_default' \
+'--category=[Category name, key, or ID]:CATEGORY:_default' \
+'--tag=[Tag name or ID]:TAG:_default' \
+'--type=[Only debits or only credits]:TYPE:((debit\:"Money out"
+credit\:"Money in"))' \
+'--ignored=[Only ignored (true) or only counted (false) transactions]:IGNORED:(true false)' \
+'--search=[Text in the description, merchant, or notes]:SEARCH:_default' \
+'--limit=[Results per page (transactions\: up to 100, notifications\: up to 50)]:LIMIT:_default' \
+'(--all)--after=[Cursor from a previous page]:AFTER:_default' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--csv[Print CSV for a spreadsheet\: one row per transaction, names instead of IDs]' \
+'--all[Fetch every page]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(ls)
+_arguments "${_arguments_options[@]}" : \
+'--from=[First day to include, YYYY-MM-DD (Brasília time)]:FROM:_default' \
+'--to=[Last day to include, YYYY-MM-DD (Brasília time) \[default\: today\]]:TO:_default' \
+'--account=[Account name or ID]:ACCOUNT:_default' \
+'--category=[Category name, key, or ID]:CATEGORY:_default' \
+'--tag=[Tag name or ID]:TAG:_default' \
+'--type=[Only debits or only credits]:TYPE:((debit\:"Money out"
+credit\:"Money in"))' \
+'--ignored=[Only ignored (true) or only counted (false) transactions]:IGNORED:(true false)' \
+'--search=[Text in the description, merchant, or notes]:SEARCH:_default' \
+'--limit=[Results per page (transactions\: up to 100, notifications\: up to 50)]:LIMIT:_default' \
+'(--all)--after=[Cursor from a previous page]:AFTER:_default' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--csv[Print CSV for a spreadsheet\: one row per transaction, names instead of IDs]' \
+'--all[Fetch every page]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(get)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':id -- Transaction ID:_default' \
+&& ret=0
+;;
+(add)
+_arguments "${_arguments_options[@]}" : \
+'--amount=[Positive amount, such as 42.90 or 42,90]:AMOUNT:_default' \
+'-d+[What it was, as it should appear in Visor]:DESCRIPTION:_default' \
+'--description=[What it was, as it should appear in Visor]:DESCRIPTION:_default' \
+'-c+[Category name, key, or ID]:CATEGORY:_default' \
+'--category=[Category name, key, or ID]:CATEGORY:_default' \
+'-a+[Account name or ID; the transaction takes its currency]:ACCOUNT:_default' \
+'--account=[Account name or ID; the transaction takes its currency]:ACCOUNT:_default' \
+'--type=[Debit for money out, credit for money in]:TYPE:((debit\:"Money out"
+credit\:"Money in"))' \
+'--at=[When it happened\: YYYY-MM-DD, an RFC 3339 time, or \`now\`]:AT:_default' \
+'--merchant=[Merchant name]:MERCHANT:_default' \
+'--notes=[Free-form notes]:NOTES:_default' \
+'*--tag=[Tag name or ID; repeat for several]:TAGS:_default' \
+'--idempotency-key=[Reuse a key to retry without recording twice \[default\: a new UUID\]]:IDEMPOTENCY_KEY:_default' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--ignored[Leave it out of totals]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(edit)
+_arguments "${_arguments_options[@]}" : \
+'--amount=[Manual transactions only]:AMOUNT:_default' \
+'-d+[Manual transactions only]:DESCRIPTION:_default' \
+'--description=[Manual transactions only]:DESCRIPTION:_default' \
+'-c+[Category name, key, or ID]:CATEGORY:_default' \
+'--category=[Category name, key, or ID]:CATEGORY:_default' \
+'--type=[Manual transactions only]:TYPE:((debit\:"Money out"
+credit\:"Money in"))' \
+'--at=[Manual transactions only\: YYYY-MM-DD, an RFC 3339 time, or \`now\`]:AT:_default' \
+'--notes=[New notes; an empty string removes them]:NOTES:_default' \
+'(--clear-tags)*--tag=[Replace every tag; repeat for several]:TAGS:_default' \
+'--ignored=[Leave it out of totals (true) or count it again (false)]:IGNORED:(true false)' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--clear-tags[Remove every tag]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+':id -- Transaction ID:_default' \
+&& ret=0
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'-y[Do not ask for confirmation]' \
+'--yes[Do not ask for confirmation]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':id -- Transaction ID:_default' \
+&& ret=0
+;;
+(rm)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'-y[Do not ask for confirmation]' \
+'--yes[Do not ask for confirmation]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':id -- Transaction ID:_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__transactions__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-transactions-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(get)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(add)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(edit)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(tx)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__transactions_commands" \
+"*::: :->transactions" \
+&& ret=0
+
+    case $state in
+    (transactions)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-transactions-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'--from=[First day to include, YYYY-MM-DD (Brasília time)]:FROM:_default' \
+'--to=[Last day to include, YYYY-MM-DD (Brasília time) \[default\: today\]]:TO:_default' \
+'--account=[Account name or ID]:ACCOUNT:_default' \
+'--category=[Category name, key, or ID]:CATEGORY:_default' \
+'--tag=[Tag name or ID]:TAG:_default' \
+'--type=[Only debits or only credits]:TYPE:((debit\:"Money out"
+credit\:"Money in"))' \
+'--ignored=[Only ignored (true) or only counted (false) transactions]:IGNORED:(true false)' \
+'--search=[Text in the description, merchant, or notes]:SEARCH:_default' \
+'--limit=[Results per page (transactions\: up to 100, notifications\: up to 50)]:LIMIT:_default' \
+'(--all)--after=[Cursor from a previous page]:AFTER:_default' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--csv[Print CSV for a spreadsheet\: one row per transaction, names instead of IDs]' \
+'--all[Fetch every page]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(ls)
+_arguments "${_arguments_options[@]}" : \
+'--from=[First day to include, YYYY-MM-DD (Brasília time)]:FROM:_default' \
+'--to=[Last day to include, YYYY-MM-DD (Brasília time) \[default\: today\]]:TO:_default' \
+'--account=[Account name or ID]:ACCOUNT:_default' \
+'--category=[Category name, key, or ID]:CATEGORY:_default' \
+'--tag=[Tag name or ID]:TAG:_default' \
+'--type=[Only debits or only credits]:TYPE:((debit\:"Money out"
+credit\:"Money in"))' \
+'--ignored=[Only ignored (true) or only counted (false) transactions]:IGNORED:(true false)' \
+'--search=[Text in the description, merchant, or notes]:SEARCH:_default' \
+'--limit=[Results per page (transactions\: up to 100, notifications\: up to 50)]:LIMIT:_default' \
+'(--all)--after=[Cursor from a previous page]:AFTER:_default' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--csv[Print CSV for a spreadsheet\: one row per transaction, names instead of IDs]' \
+'--all[Fetch every page]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(get)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':id -- Transaction ID:_default' \
+&& ret=0
+;;
+(add)
+_arguments "${_arguments_options[@]}" : \
+'--amount=[Positive amount, such as 42.90 or 42,90]:AMOUNT:_default' \
+'-d+[What it was, as it should appear in Visor]:DESCRIPTION:_default' \
+'--description=[What it was, as it should appear in Visor]:DESCRIPTION:_default' \
+'-c+[Category name, key, or ID]:CATEGORY:_default' \
+'--category=[Category name, key, or ID]:CATEGORY:_default' \
+'-a+[Account name or ID; the transaction takes its currency]:ACCOUNT:_default' \
+'--account=[Account name or ID; the transaction takes its currency]:ACCOUNT:_default' \
+'--type=[Debit for money out, credit for money in]:TYPE:((debit\:"Money out"
+credit\:"Money in"))' \
+'--at=[When it happened\: YYYY-MM-DD, an RFC 3339 time, or \`now\`]:AT:_default' \
+'--merchant=[Merchant name]:MERCHANT:_default' \
+'--notes=[Free-form notes]:NOTES:_default' \
+'*--tag=[Tag name or ID; repeat for several]:TAGS:_default' \
+'--idempotency-key=[Reuse a key to retry without recording twice \[default\: a new UUID\]]:IDEMPOTENCY_KEY:_default' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--ignored[Leave it out of totals]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(edit)
+_arguments "${_arguments_options[@]}" : \
+'--amount=[Manual transactions only]:AMOUNT:_default' \
+'-d+[Manual transactions only]:DESCRIPTION:_default' \
+'--description=[Manual transactions only]:DESCRIPTION:_default' \
+'-c+[Category name, key, or ID]:CATEGORY:_default' \
+'--category=[Category name, key, or ID]:CATEGORY:_default' \
+'--type=[Manual transactions only]:TYPE:((debit\:"Money out"
+credit\:"Money in"))' \
+'--at=[Manual transactions only\: YYYY-MM-DD, an RFC 3339 time, or \`now\`]:AT:_default' \
+'--notes=[New notes; an empty string removes them]:NOTES:_default' \
+'(--clear-tags)*--tag=[Replace every tag; repeat for several]:TAGS:_default' \
+'--ignored=[Leave it out of totals (true) or count it again (false)]:IGNORED:(true false)' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--clear-tags[Remove every tag]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+':id -- Transaction ID:_default' \
+&& ret=0
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'-y[Do not ask for confirmation]' \
+'--yes[Do not ask for confirmation]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':id -- Transaction ID:_default' \
+&& ret=0
+;;
+(rm)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'-y[Do not ask for confirmation]' \
+'--yes[Do not ask for confirmation]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':id -- Transaction ID:_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__transactions__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-transactions-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(get)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(add)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(edit)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(accounts)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__accounts_commands" \
+"*::: :->accounts" \
+&& ret=0
+
+    case $state in
+    (accounts)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-accounts-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--include-hidden[Include the ones hidden in Visor]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(ls)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--include-hidden[Include the ones hidden in Visor]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__accounts__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-accounts-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(categories)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__categories_commands" \
+"*::: :->categories" \
+&& ret=0
+
+    case $state in
+    (categories)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-categories-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--include-hidden[Include the ones hidden in Visor]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(ls)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--include-hidden[Include the ones hidden in Visor]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__categories__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-categories-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(tags)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__tags_commands" \
+"*::: :->tags" \
+&& ret=0
+
+    case $state in
+    (tags)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-tags-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(ls)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__tags__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-tags-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(cards)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__cards_commands" \
+"*::: :->cards" \
+&& ret=0
+
+    case $state in
+    (cards)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-cards-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(ls)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(bills)
+_arguments "${_arguments_options[@]}" : \
+'--from=[First due date to include, YYYY-MM-DD \[default\: start of this month\]]:FROM:_default' \
+'--to=[Last due date to include, YYYY-MM-DD \[default\: end of this month\]]:TO:_default' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':card -- Card ID, from `visor cards list`:_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__cards__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-cards-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(bills)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(subscriptions)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__subscriptions_commands" \
+"*::: :->subscriptions" \
+&& ret=0
+
+    case $state in
+    (subscriptions)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-subscriptions-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(ls)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__subscriptions__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-subscriptions-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(fixed-bills)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__fixed-bills_commands" \
+"*::: :->fixed-bills" \
+&& ret=0
+
+    case $state in
+    (fixed-bills)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-fixed-bills-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(ls)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__fixed-bills__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-fixed-bills-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(installments)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__installments_commands" \
+"*::: :->installments" \
+&& ret=0
+
+    case $state in
+    (installments)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-installments-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'--status=[Only plans with this status]:STATUS:(active completed)' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(ls)
+_arguments "${_arguments_options[@]}" : \
+'--status=[Only plans with this status]:STATUS:(active completed)' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__installments__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-installments-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(goals)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__goals_commands" \
+"*::: :->goals" \
+&& ret=0
+
+    case $state in
+    (goals)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-goals-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'--status=[Only goals with this status]:STATUS:(active archived completed)' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(ls)
+_arguments "${_arguments_options[@]}" : \
+'--status=[Only goals with this status]:STATUS:(active archived completed)' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__goals__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-goals-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(investments)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__investments_commands" \
+"*::: :->investments" \
+&& ret=0
+
+    case $state in
+    (investments)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-investments-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(ls)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__investments__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-investments-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(connections)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__connections_commands" \
+"*::: :->connections" \
+&& ret=0
+
+    case $state in
+    (connections)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-connections-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(ls)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__connections__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-connections-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(overview)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(notifications)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__notifications_commands" \
+"*::: :->notifications" \
+&& ret=0
+
+    case $state in
+    (notifications)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-notifications-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'--limit=[Results per page (transactions\: up to 100, notifications\: up to 50)]:LIMIT:_default' \
+'(--all)--after=[Cursor from a previous page]:AFTER:_default' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--unread[Only unread notifications]' \
+'--all[Fetch every page]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(ls)
+_arguments "${_arguments_options[@]}" : \
+'--limit=[Results per page (transactions\: up to 100, notifications\: up to 50)]:LIMIT:_default' \
+'(--all)--after=[Cursor from a previous page]:AFTER:_default' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--unread[Only unread notifications]' \
+'--all[Fetch every page]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__notifications__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-notifications-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(completions)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':shell -- Shell to generate for:(bash elvish fish powershell zsh)' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-command-$line[1]:"
+        case $line[1] in
+            (auth)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__auth_commands" \
+"*::: :->auth" \
+&& ret=0
+
+    case $state in
+    (auth)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-auth-command-$line[1]:"
+        case $line[1] in
+            (login)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(logout)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(whoami)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(doctor)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(open)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(me)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(spaces)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__spaces_commands" \
+"*::: :->spaces" \
+&& ret=0
+
+    case $state in
+    (spaces)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-spaces-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(use)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(transactions)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__transactions_commands" \
+"*::: :->transactions" \
+&& ret=0
+
+    case $state in
+    (transactions)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-transactions-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(get)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(add)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(edit)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(accounts)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__accounts_commands" \
+"*::: :->accounts" \
+&& ret=0
+
+    case $state in
+    (accounts)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-accounts-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(categories)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__categories_commands" \
+"*::: :->categories" \
+&& ret=0
+
+    case $state in
+    (categories)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-categories-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(tags)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__tags_commands" \
+"*::: :->tags" \
+&& ret=0
+
+    case $state in
+    (tags)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-tags-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(cards)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__cards_commands" \
+"*::: :->cards" \
+&& ret=0
+
+    case $state in
+    (cards)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-cards-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(bills)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(subscriptions)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__subscriptions_commands" \
+"*::: :->subscriptions" \
+&& ret=0
+
+    case $state in
+    (subscriptions)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-subscriptions-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(fixed-bills)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__fixed-bills_commands" \
+"*::: :->fixed-bills" \
+&& ret=0
+
+    case $state in
+    (fixed-bills)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-fixed-bills-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(installments)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__installments_commands" \
+"*::: :->installments" \
+&& ret=0
+
+    case $state in
+    (installments)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-installments-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(goals)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__goals_commands" \
+"*::: :->goals" \
+&& ret=0
+
+    case $state in
+    (goals)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-goals-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(investments)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__investments_commands" \
+"*::: :->investments" \
+&& ret=0
+
+    case $state in
+    (investments)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-investments-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(connections)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__connections_commands" \
+"*::: :->connections" \
+&& ret=0
+
+    case $state in
+    (connections)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-connections-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(overview)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(notifications)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__notifications_commands" \
+"*::: :->notifications" \
+&& ret=0
+
+    case $state in
+    (notifications)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-notifications-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(completions)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+}
+
+(( $+functions[_visor_commands] )) ||
+_visor_commands() {
+    local commands; commands=(
+'auth:Log in, log out, and check the stored login' \
+'whoami:Show who is logged in, how, and the space commands act on' \
+'doctor:Check the CLI version, the login, and the connection to Visor' \
+'open:Open Visor in the browser\: the dashboard or a page of it' \
+'me:Show the user the token belongs to' \
+'spaces:List spaces and choose the default one' \
+'transactions:List, record, edit, and delete transactions' \
+'tx:List, record, edit, and delete transactions' \
+'accounts:List accounts' \
+'categories:List categories' \
+'tags:List tags' \
+'cards:List credit cards and their bills' \
+'subscriptions:List subscriptions' \
+'fixed-bills:List fixed bills, such as rent or utilities' \
+'installments:List installment plans' \
+'goals:List goals' \
+'investments:List investments' \
+'connections:List Open Finance connections and their sync status' \
+'overview:Show balances, the month so far, and the projection for a space' \
+'notifications:List notifications' \
+'completions:Print a shell completion script' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__accounts_commands] )) ||
+_visor__subcmd__accounts_commands() {
+    local commands; commands=(
+'list:List them' \
+'ls:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor accounts commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__accounts__subcmd__help_commands] )) ||
+_visor__subcmd__accounts__subcmd__help_commands() {
+    local commands; commands=(
+'list:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor accounts help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__accounts__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__accounts__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor accounts help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__accounts__subcmd__help__subcmd__list_commands] )) ||
+_visor__subcmd__accounts__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor accounts help list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__accounts__subcmd__list_commands] )) ||
+_visor__subcmd__accounts__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor accounts list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__auth_commands] )) ||
+_visor__subcmd__auth_commands() {
+    local commands; commands=(
+'login:Log in through the browser, or with a personal API token' \
+'logout:Remove the stored login' \
+'status:Show which token is in use and whom it belongs to' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor auth commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__auth__subcmd__help_commands] )) ||
+_visor__subcmd__auth__subcmd__help_commands() {
+    local commands; commands=(
+'login:Log in through the browser, or with a personal API token' \
+'logout:Remove the stored login' \
+'status:Show which token is in use and whom it belongs to' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor auth help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__auth__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__auth__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor auth help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__auth__subcmd__help__subcmd__login_commands] )) ||
+_visor__subcmd__auth__subcmd__help__subcmd__login_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor auth help login commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__auth__subcmd__help__subcmd__logout_commands] )) ||
+_visor__subcmd__auth__subcmd__help__subcmd__logout_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor auth help logout commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__auth__subcmd__help__subcmd__status_commands] )) ||
+_visor__subcmd__auth__subcmd__help__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor auth help status commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__auth__subcmd__login_commands] )) ||
+_visor__subcmd__auth__subcmd__login_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor auth login commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__auth__subcmd__logout_commands] )) ||
+_visor__subcmd__auth__subcmd__logout_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor auth logout commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__auth__subcmd__status_commands] )) ||
+_visor__subcmd__auth__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor auth status commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__cards_commands] )) ||
+_visor__subcmd__cards_commands() {
+    local commands; commands=(
+'list:List credit cards with their limits and current bill' \
+'ls:List credit cards with their limits and current bill' \
+'bills:List the bills of a card' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor cards commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__cards__subcmd__bills_commands] )) ||
+_visor__subcmd__cards__subcmd__bills_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor cards bills commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__cards__subcmd__help_commands] )) ||
+_visor__subcmd__cards__subcmd__help_commands() {
+    local commands; commands=(
+'list:List credit cards with their limits and current bill' \
+'bills:List the bills of a card' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor cards help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__cards__subcmd__help__subcmd__bills_commands] )) ||
+_visor__subcmd__cards__subcmd__help__subcmd__bills_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor cards help bills commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__cards__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__cards__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor cards help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__cards__subcmd__help__subcmd__list_commands] )) ||
+_visor__subcmd__cards__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor cards help list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__cards__subcmd__list_commands] )) ||
+_visor__subcmd__cards__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor cards list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__categories_commands] )) ||
+_visor__subcmd__categories_commands() {
+    local commands; commands=(
+'list:List them' \
+'ls:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor categories commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__categories__subcmd__help_commands] )) ||
+_visor__subcmd__categories__subcmd__help_commands() {
+    local commands; commands=(
+'list:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor categories help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__categories__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__categories__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor categories help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__categories__subcmd__help__subcmd__list_commands] )) ||
+_visor__subcmd__categories__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor categories help list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__categories__subcmd__list_commands] )) ||
+_visor__subcmd__categories__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor categories list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__completions_commands] )) ||
+_visor__subcmd__completions_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor completions commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__connections_commands] )) ||
+_visor__subcmd__connections_commands() {
+    local commands; commands=(
+'list:List them' \
+'ls:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor connections commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__connections__subcmd__help_commands] )) ||
+_visor__subcmd__connections__subcmd__help_commands() {
+    local commands; commands=(
+'list:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor connections help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__connections__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__connections__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor connections help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__connections__subcmd__help__subcmd__list_commands] )) ||
+_visor__subcmd__connections__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor connections help list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__connections__subcmd__list_commands] )) ||
+_visor__subcmd__connections__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor connections list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__doctor_commands] )) ||
+_visor__subcmd__doctor_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor doctor commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__fixed-bills_commands] )) ||
+_visor__subcmd__fixed-bills_commands() {
+    local commands; commands=(
+'list:List them' \
+'ls:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor fixed-bills commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__fixed-bills__subcmd__help_commands] )) ||
+_visor__subcmd__fixed-bills__subcmd__help_commands() {
+    local commands; commands=(
+'list:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor fixed-bills help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__fixed-bills__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__fixed-bills__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor fixed-bills help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__fixed-bills__subcmd__help__subcmd__list_commands] )) ||
+_visor__subcmd__fixed-bills__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor fixed-bills help list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__fixed-bills__subcmd__list_commands] )) ||
+_visor__subcmd__fixed-bills__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor fixed-bills list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__goals_commands] )) ||
+_visor__subcmd__goals_commands() {
+    local commands; commands=(
+'list:List them' \
+'ls:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor goals commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__goals__subcmd__help_commands] )) ||
+_visor__subcmd__goals__subcmd__help_commands() {
+    local commands; commands=(
+'list:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor goals help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__goals__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__goals__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor goals help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__goals__subcmd__help__subcmd__list_commands] )) ||
+_visor__subcmd__goals__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor goals help list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__goals__subcmd__list_commands] )) ||
+_visor__subcmd__goals__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor goals list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help_commands] )) ||
+_visor__subcmd__help_commands() {
+    local commands; commands=(
+'auth:Log in, log out, and check the stored login' \
+'whoami:Show who is logged in, how, and the space commands act on' \
+'doctor:Check the CLI version, the login, and the connection to Visor' \
+'open:Open Visor in the browser\: the dashboard or a page of it' \
+'me:Show the user the token belongs to' \
+'spaces:List spaces and choose the default one' \
+'transactions:List, record, edit, and delete transactions' \
+'accounts:List accounts' \
+'categories:List categories' \
+'tags:List tags' \
+'cards:List credit cards and their bills' \
+'subscriptions:List subscriptions' \
+'fixed-bills:List fixed bills, such as rent or utilities' \
+'installments:List installment plans' \
+'goals:List goals' \
+'investments:List investments' \
+'connections:List Open Finance connections and their sync status' \
+'overview:Show balances, the month so far, and the projection for a space' \
+'notifications:List notifications' \
+'completions:Print a shell completion script' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__accounts_commands] )) ||
+_visor__subcmd__help__subcmd__accounts_commands() {
+    local commands; commands=(
+'list:List them' \
+    )
+    _describe -t commands 'visor help accounts commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__accounts__subcmd__list_commands] )) ||
+_visor__subcmd__help__subcmd__accounts__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help accounts list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__auth_commands] )) ||
+_visor__subcmd__help__subcmd__auth_commands() {
+    local commands; commands=(
+'login:Log in through the browser, or with a personal API token' \
+'logout:Remove the stored login' \
+'status:Show which token is in use and whom it belongs to' \
+    )
+    _describe -t commands 'visor help auth commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__auth__subcmd__login_commands] )) ||
+_visor__subcmd__help__subcmd__auth__subcmd__login_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help auth login commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__auth__subcmd__logout_commands] )) ||
+_visor__subcmd__help__subcmd__auth__subcmd__logout_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help auth logout commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__auth__subcmd__status_commands] )) ||
+_visor__subcmd__help__subcmd__auth__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help auth status commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__cards_commands] )) ||
+_visor__subcmd__help__subcmd__cards_commands() {
+    local commands; commands=(
+'list:List credit cards with their limits and current bill' \
+'bills:List the bills of a card' \
+    )
+    _describe -t commands 'visor help cards commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__cards__subcmd__bills_commands] )) ||
+_visor__subcmd__help__subcmd__cards__subcmd__bills_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help cards bills commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__cards__subcmd__list_commands] )) ||
+_visor__subcmd__help__subcmd__cards__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help cards list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__categories_commands] )) ||
+_visor__subcmd__help__subcmd__categories_commands() {
+    local commands; commands=(
+'list:List them' \
+    )
+    _describe -t commands 'visor help categories commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__categories__subcmd__list_commands] )) ||
+_visor__subcmd__help__subcmd__categories__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help categories list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__completions_commands] )) ||
+_visor__subcmd__help__subcmd__completions_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help completions commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__connections_commands] )) ||
+_visor__subcmd__help__subcmd__connections_commands() {
+    local commands; commands=(
+'list:List them' \
+    )
+    _describe -t commands 'visor help connections commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__connections__subcmd__list_commands] )) ||
+_visor__subcmd__help__subcmd__connections__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help connections list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__doctor_commands] )) ||
+_visor__subcmd__help__subcmd__doctor_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help doctor commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__fixed-bills_commands] )) ||
+_visor__subcmd__help__subcmd__fixed-bills_commands() {
+    local commands; commands=(
+'list:List them' \
+    )
+    _describe -t commands 'visor help fixed-bills commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__fixed-bills__subcmd__list_commands] )) ||
+_visor__subcmd__help__subcmd__fixed-bills__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help fixed-bills list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__goals_commands] )) ||
+_visor__subcmd__help__subcmd__goals_commands() {
+    local commands; commands=(
+'list:List them' \
+    )
+    _describe -t commands 'visor help goals commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__goals__subcmd__list_commands] )) ||
+_visor__subcmd__help__subcmd__goals__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help goals list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__installments_commands] )) ||
+_visor__subcmd__help__subcmd__installments_commands() {
+    local commands; commands=(
+'list:List them' \
+    )
+    _describe -t commands 'visor help installments commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__installments__subcmd__list_commands] )) ||
+_visor__subcmd__help__subcmd__installments__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help installments list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__investments_commands] )) ||
+_visor__subcmd__help__subcmd__investments_commands() {
+    local commands; commands=(
+'list:List them' \
+    )
+    _describe -t commands 'visor help investments commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__investments__subcmd__list_commands] )) ||
+_visor__subcmd__help__subcmd__investments__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help investments list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__me_commands] )) ||
+_visor__subcmd__help__subcmd__me_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help me commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__notifications_commands] )) ||
+_visor__subcmd__help__subcmd__notifications_commands() {
+    local commands; commands=(
+'list:List them' \
+    )
+    _describe -t commands 'visor help notifications commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__notifications__subcmd__list_commands] )) ||
+_visor__subcmd__help__subcmd__notifications__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help notifications list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__open_commands] )) ||
+_visor__subcmd__help__subcmd__open_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help open commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__overview_commands] )) ||
+_visor__subcmd__help__subcmd__overview_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help overview commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__spaces_commands] )) ||
+_visor__subcmd__help__subcmd__spaces_commands() {
+    local commands; commands=(
+'list:List the spaces you can access' \
+'use:Set the space other commands act on' \
+    )
+    _describe -t commands 'visor help spaces commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__spaces__subcmd__list_commands] )) ||
+_visor__subcmd__help__subcmd__spaces__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help spaces list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__spaces__subcmd__use_commands] )) ||
+_visor__subcmd__help__subcmd__spaces__subcmd__use_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help spaces use commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__subscriptions_commands] )) ||
+_visor__subcmd__help__subcmd__subscriptions_commands() {
+    local commands; commands=(
+'list:List them' \
+    )
+    _describe -t commands 'visor help subscriptions commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__subscriptions__subcmd__list_commands] )) ||
+_visor__subcmd__help__subcmd__subscriptions__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help subscriptions list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__tags_commands] )) ||
+_visor__subcmd__help__subcmd__tags_commands() {
+    local commands; commands=(
+'list:List them' \
+    )
+    _describe -t commands 'visor help tags commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__tags__subcmd__list_commands] )) ||
+_visor__subcmd__help__subcmd__tags__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help tags list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__transactions_commands] )) ||
+_visor__subcmd__help__subcmd__transactions_commands() {
+    local commands; commands=(
+'list:List transactions, newest first' \
+'get:Show one transaction' \
+'add:Record a manual transaction' \
+'edit:Edit a transaction; bank-owned fields of a connected one cannot change' \
+'delete:Delete a transaction' \
+    )
+    _describe -t commands 'visor help transactions commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__transactions__subcmd__add_commands] )) ||
+_visor__subcmd__help__subcmd__transactions__subcmd__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help transactions add commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__transactions__subcmd__delete_commands] )) ||
+_visor__subcmd__help__subcmd__transactions__subcmd__delete_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help transactions delete commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__transactions__subcmd__edit_commands] )) ||
+_visor__subcmd__help__subcmd__transactions__subcmd__edit_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help transactions edit commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__transactions__subcmd__get_commands] )) ||
+_visor__subcmd__help__subcmd__transactions__subcmd__get_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help transactions get commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__transactions__subcmd__list_commands] )) ||
+_visor__subcmd__help__subcmd__transactions__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help transactions list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__whoami_commands] )) ||
+_visor__subcmd__help__subcmd__whoami_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help whoami commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__installments_commands] )) ||
+_visor__subcmd__installments_commands() {
+    local commands; commands=(
+'list:List them' \
+'ls:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor installments commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__installments__subcmd__help_commands] )) ||
+_visor__subcmd__installments__subcmd__help_commands() {
+    local commands; commands=(
+'list:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor installments help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__installments__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__installments__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor installments help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__installments__subcmd__help__subcmd__list_commands] )) ||
+_visor__subcmd__installments__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor installments help list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__installments__subcmd__list_commands] )) ||
+_visor__subcmd__installments__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor installments list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__investments_commands] )) ||
+_visor__subcmd__investments_commands() {
+    local commands; commands=(
+'list:List them' \
+'ls:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor investments commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__investments__subcmd__help_commands] )) ||
+_visor__subcmd__investments__subcmd__help_commands() {
+    local commands; commands=(
+'list:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor investments help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__investments__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__investments__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor investments help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__investments__subcmd__help__subcmd__list_commands] )) ||
+_visor__subcmd__investments__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor investments help list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__investments__subcmd__list_commands] )) ||
+_visor__subcmd__investments__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor investments list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__me_commands] )) ||
+_visor__subcmd__me_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor me commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__notifications_commands] )) ||
+_visor__subcmd__notifications_commands() {
+    local commands; commands=(
+'list:List them' \
+'ls:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor notifications commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__notifications__subcmd__help_commands] )) ||
+_visor__subcmd__notifications__subcmd__help_commands() {
+    local commands; commands=(
+'list:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor notifications help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__notifications__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__notifications__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor notifications help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__notifications__subcmd__help__subcmd__list_commands] )) ||
+_visor__subcmd__notifications__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor notifications help list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__notifications__subcmd__list_commands] )) ||
+_visor__subcmd__notifications__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor notifications list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__open_commands] )) ||
+_visor__subcmd__open_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor open commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__overview_commands] )) ||
+_visor__subcmd__overview_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor overview commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__spaces_commands] )) ||
+_visor__subcmd__spaces_commands() {
+    local commands; commands=(
+'list:List the spaces you can access' \
+'ls:List the spaces you can access' \
+'use:Set the space other commands act on' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor spaces commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__spaces__subcmd__help_commands] )) ||
+_visor__subcmd__spaces__subcmd__help_commands() {
+    local commands; commands=(
+'list:List the spaces you can access' \
+'use:Set the space other commands act on' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor spaces help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__spaces__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__spaces__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor spaces help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__spaces__subcmd__help__subcmd__list_commands] )) ||
+_visor__subcmd__spaces__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor spaces help list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__spaces__subcmd__help__subcmd__use_commands] )) ||
+_visor__subcmd__spaces__subcmd__help__subcmd__use_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor spaces help use commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__spaces__subcmd__list_commands] )) ||
+_visor__subcmd__spaces__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor spaces list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__spaces__subcmd__use_commands] )) ||
+_visor__subcmd__spaces__subcmd__use_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor spaces use commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__subscriptions_commands] )) ||
+_visor__subcmd__subscriptions_commands() {
+    local commands; commands=(
+'list:List them' \
+'ls:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor subscriptions commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__subscriptions__subcmd__help_commands] )) ||
+_visor__subcmd__subscriptions__subcmd__help_commands() {
+    local commands; commands=(
+'list:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor subscriptions help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__subscriptions__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__subscriptions__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor subscriptions help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__subscriptions__subcmd__help__subcmd__list_commands] )) ||
+_visor__subcmd__subscriptions__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor subscriptions help list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__subscriptions__subcmd__list_commands] )) ||
+_visor__subcmd__subscriptions__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor subscriptions list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__tags_commands] )) ||
+_visor__subcmd__tags_commands() {
+    local commands; commands=(
+'list:List them' \
+'ls:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor tags commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__tags__subcmd__help_commands] )) ||
+_visor__subcmd__tags__subcmd__help_commands() {
+    local commands; commands=(
+'list:List them' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor tags help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__tags__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__tags__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor tags help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__tags__subcmd__help__subcmd__list_commands] )) ||
+_visor__subcmd__tags__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor tags help list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__tags__subcmd__list_commands] )) ||
+_visor__subcmd__tags__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor tags list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__transactions_commands] )) ||
+_visor__subcmd__transactions_commands() {
+    local commands; commands=(
+'list:List transactions, newest first' \
+'ls:List transactions, newest first' \
+'get:Show one transaction' \
+'add:Record a manual transaction' \
+'edit:Edit a transaction; bank-owned fields of a connected one cannot change' \
+'delete:Delete a transaction' \
+'rm:Delete a transaction' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor transactions commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__transactions__subcmd__add_commands] )) ||
+_visor__subcmd__transactions__subcmd__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor transactions add commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__transactions__subcmd__delete_commands] )) ||
+_visor__subcmd__transactions__subcmd__delete_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor transactions delete commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__transactions__subcmd__edit_commands] )) ||
+_visor__subcmd__transactions__subcmd__edit_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor transactions edit commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__transactions__subcmd__get_commands] )) ||
+_visor__subcmd__transactions__subcmd__get_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor transactions get commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__transactions__subcmd__help_commands] )) ||
+_visor__subcmd__transactions__subcmd__help_commands() {
+    local commands; commands=(
+'list:List transactions, newest first' \
+'get:Show one transaction' \
+'add:Record a manual transaction' \
+'edit:Edit a transaction; bank-owned fields of a connected one cannot change' \
+'delete:Delete a transaction' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor transactions help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__transactions__subcmd__help__subcmd__add_commands] )) ||
+_visor__subcmd__transactions__subcmd__help__subcmd__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor transactions help add commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__transactions__subcmd__help__subcmd__delete_commands] )) ||
+_visor__subcmd__transactions__subcmd__help__subcmd__delete_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor transactions help delete commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__transactions__subcmd__help__subcmd__edit_commands] )) ||
+_visor__subcmd__transactions__subcmd__help__subcmd__edit_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor transactions help edit commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__transactions__subcmd__help__subcmd__get_commands] )) ||
+_visor__subcmd__transactions__subcmd__help__subcmd__get_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor transactions help get commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__transactions__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__transactions__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor transactions help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__transactions__subcmd__help__subcmd__list_commands] )) ||
+_visor__subcmd__transactions__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor transactions help list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__transactions__subcmd__list_commands] )) ||
+_visor__subcmd__transactions__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor transactions list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__whoami_commands] )) ||
+_visor__subcmd__whoami_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor whoami commands' commands "$@"
+}
+
+if [ "$funcstack[1]" = "_visor" ]; then
+    _visor "$@"
+else
+    compdef _visor visor
+fi

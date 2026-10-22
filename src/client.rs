@@ -12,6 +12,7 @@ use reqwest::{Method, StatusCode};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
+use crate::debug;
 use crate::error::{ApiError, Error, Result};
 
 pub const DEFAULT_API_URL: &str = "https://api.visorfinance.app";
@@ -148,7 +149,24 @@ impl Client {
             }
 
             let can_retry = attempt < self.retry.max_retries;
-            match request.send() {
+            let started = std::time::Instant::now();
+            let sent = request.send();
+            if debug::enabled() {
+                let url = format!("{}{path}", self.base_url);
+                match &sent {
+                    Ok(response) => debug::request(
+                        method.as_str(),
+                        &url,
+                        response.status().as_str(),
+                        started.elapsed(),
+                        request_id(response.headers()).as_deref(),
+                    ),
+                    Err(error) => {
+                        debug::request(method.as_str(), &url, &error.to_string(), started.elapsed(), None);
+                    }
+                }
+            }
+            match sent {
                 Ok(response) if response.status().is_success() => return reply(response),
                 Ok(response) if response.status() == StatusCode::UNAUTHORIZED => {
                     // An expired access token is refreshed once and the request

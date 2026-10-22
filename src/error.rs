@@ -84,6 +84,38 @@ impl Error {
         }
     }
 
+    /// The error as `{"error": {...}}` for `--json`: a stable `code`, the
+    /// message, and for an API error its HTTP status, details, and request ID.
+    #[must_use]
+    pub fn to_json(&self) -> serde_json::Value {
+        let code = match self {
+            Self::Api(api) => api.code.clone(),
+            Self::Network(_) => "NETWORK_ERROR".to_owned(),
+            Self::NotLoggedIn => "NOT_LOGGED_IN".to_owned(),
+            Self::LoginExpired => "LOGIN_EXPIRED".to_owned(),
+            Self::Login(_) => "LOGIN_FAILED".to_owned(),
+            Self::ChecksFailed(_) => "CHECKS_FAILED".to_owned(),
+            Self::Usage(_) => "USAGE".to_owned(),
+            Self::Credentials(_) => "CREDENTIAL_STORE".to_owned(),
+            Self::Io { .. } => "IO_ERROR".to_owned(),
+            Self::Decode(_) => "UNEXPECTED_RESPONSE".to_owned(),
+        };
+        let mut error = serde_json::json!({
+            "code": code,
+            "message": match self {
+                Self::Api(api) => api.message.clone(),
+                other => other.to_string(),
+            },
+            "exit_code": self.exit_status(),
+        });
+        if let Self::Api(api) = self {
+            error["status"] = api.status.into();
+            error["details"] = api.details.clone();
+            error["request_id"] = api.request_id.clone().into();
+        }
+        serde_json::json!({ "error": error })
+    }
+
     /// Returns the API error code, such as `NOT_FOUND`, when there is one.
     #[must_use]
     pub fn api_code(&self) -> Option<&str> {
@@ -232,6 +264,23 @@ mod tests {
         let text = ApiError::from_body(422, body, None).to_string();
 
         assert!(text.contains("amount: must be positive"), "{text}");
+    }
+
+    #[test]
+    fn json_errors_carry_a_stable_code() {
+        let body =
+            r#"{"errors":[{"code":"NOT_FOUND","message":"Not found.","details":{},"request_id":"r1"}]}"#;
+        let api = Error::Api(ApiError::from_body(404, body, None)).to_json();
+
+        assert_eq!(api["error"]["code"], "NOT_FOUND");
+        assert_eq!(api["error"]["status"], 404);
+        assert_eq!(api["error"]["request_id"], "r1");
+        assert_eq!(api["error"]["exit_code"], exit::NOT_FOUND);
+
+        let local = Error::NotLoggedIn.to_json();
+        assert_eq!(local["error"]["code"], "NOT_LOGGED_IN");
+        assert_eq!(local["error"]["exit_code"], exit::AUTH);
+        assert!(local["error"].get("status").is_none());
     }
 
     #[test]

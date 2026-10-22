@@ -826,3 +826,143 @@ fn doctor_fails_when_the_api_rejects_the_token() {
         ))
         .stderr(predicate::str::contains("1 check(s) failed"));
 }
+
+#[test]
+fn json_errors_are_json_on_stderr() {
+    let mut harness = Harness::new();
+    harness.spaces();
+    harness
+        .server
+        .mock("GET", format!("/v1/spaces/{SPACE}/transactions/{TX}").as_str())
+        .with_status(404)
+        .with_header("x-request-id", "req-9")
+        .with_body(r#"{"errors":[{"code":"NOT_FOUND","message":"Not found.","details":{}}]}"#)
+        .create();
+
+    let output = harness
+        .visor()
+        .args(["tx", "get", TX, "--json"])
+        .assert()
+        .code(4)
+        .get_output()
+        .clone();
+
+    assert_eq!(output.stdout, b"");
+    let error: Value = serde_json::from_slice(&output.stderr).unwrap();
+    assert_eq!(error["error"]["code"], "NOT_FOUND");
+    assert_eq!(error["error"]["status"], 404);
+    assert_eq!(error["error"]["request_id"], "req-9");
+    assert_eq!(error["error"]["exit_code"], 4);
+}
+
+#[test]
+fn local_errors_are_json_too() {
+    let output = Harness::new()
+        .visor()
+        .env_remove("VISOR_TOKEN")
+        .args(["me", "--json"])
+        .assert()
+        .code(3)
+        .get_output()
+        .clone();
+
+    let error: Value = serde_json::from_slice(&output.stderr).unwrap();
+    assert_eq!(error["error"]["code"], "NOT_LOGGED_IN");
+}
+
+#[test]
+fn debug_logs_each_request_without_the_token() {
+    let mut harness = Harness::new();
+    harness
+        .server
+        .mock("GET", "/v1/me")
+        .with_header("x-request-id", "req-1")
+        .with_body(me().to_string())
+        .create();
+
+    harness
+        .visor()
+        .args(["me", "--debug"])
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("[debug] GET"))
+        .stderr(predicate::str::contains("/v1/me → 200 in"))
+        .stderr(predicate::str::contains("(request id req-1)"))
+        .stderr(predicate::str::contains("secret").not());
+}
+
+#[test]
+fn transaction_list_exports_csv_with_names_and_signed_amounts() {
+    let mut harness = Harness::new();
+    harness.spaces();
+    harness.reference_data();
+    let mut formula = transaction();
+    formula["id"] = json!("88888888-8888-4888-8888-888888888888");
+    formula["description"] = json!("=HYPERLINK(\"evil\")");
+    formula["type"] = json!("credit");
+    formula["amount"] = json!("1000.00");
+    let mut tagged = transaction();
+    tagged["tag_ids"] = json!([TAG]);
+    tagged["notes"] = json!("pão, leite");
+    harness
+        .server
+        .mock("GET", format!("/v1/spaces/{SPACE}/transactions").as_str())
+        .match_query(Matcher::Any)
+        .with_body(json!({"data": [tagged, formula], "next_cursor": null}).to_string())
+        .create();
+
+    let output = harness
+        .visor()
+        .args(["tx", "list", "--csv"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let text = String::from_utf8(output).unwrap();
+    let lines: Vec<&str> = text.split("\r\n").collect();
+
+    assert!(lines[0].starts_with("date,time,description,amount,currency,type,category,account,tags"));
+    assert!(
+        lines[1].contains(",-18.90,BRL,debit,Groceries,Nubank,viagem,"),
+        "{}",
+        lines[1]
+    );
+    assert!(lines[1].contains("\"pão, leite\""), "{}", lines[1]);
+    assert!(lines[2].contains("\"'=HYPERLINK(\"\"evil\"\")\""), "{}", lines[2]);
+    assert!(lines[2].contains(",1000.00,BRL,credit,"), "{}", lines[2]);
+}
+
+#[test]
+fn open_prints_the_page_url() {
+    Harness::new()
+        .visor()
+        .args(["open", "tokens", "--print"])
+        .assert()
+        .success()
+        .stdout("https://dashboard.visorfinance.app/settings/connected_apps\n");
+}
+
+#[test]
+fn no_update_notice_in_a_pipe() {
+    let mut harness = Harness::new();
+    harness.get("/v1/me", &me());
+    let releases = harness
+        .server
+        .mock("GET", "/releases/latest")
+        .with_body(r#"{"tag_name":"v99.0.0"}"#)
+        .expect(0)
+        .create();
+
+    harness
+        .visor()
+        .arg("me")
+        .env(
+            "VISOR_RELEASES_URL",
+            format!("{}/releases/latest", harness.server.url()),
+        )
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("is out").not());
+    releases.assert();
+}

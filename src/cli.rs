@@ -41,6 +41,10 @@ pub struct Global {
     #[arg(long, short = 's', global = true, env = "VISOR_SPACE", value_name = "SPACE")]
     pub space: Option<String>,
 
+    /// Print each HTTP request (method, URL, status, time, request ID) on standard error
+    #[arg(long, global = true, env = "VISOR_DEBUG", value_parser = clap::builder::FalseyValueParser::new())]
+    pub debug: bool,
+
     /// API base URL
     #[arg(long, global = true, env = "VISOR_API_URL", default_value = DEFAULT_API_URL, hide = true)]
     pub api_url: String,
@@ -61,6 +65,17 @@ pub enum Command {
 
     /// Check the CLI version, the login, and the connection to Visor
     Doctor,
+
+    /// Open Visor in the browser: the dashboard or a page of it
+    #[command(after_help = "Examples:\n  visor open\n  visor open transactions\n  visor open tokens --print")]
+    Open {
+        #[arg(value_enum, default_value_t = Page::Dashboard)]
+        page: Page,
+
+        /// Print the URL instead of opening it
+        #[arg(long)]
+        print: bool,
+    },
 
     /// Show the user the token belongs to
     Me,
@@ -127,6 +142,50 @@ pub enum Command {
         #[arg(value_enum)]
         shell: Shell,
     },
+}
+
+/// A page that `visor open` opens.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum Page {
+    Dashboard,
+    Transactions,
+    Accounts,
+    Cards,
+    Cashflow,
+    Projection,
+    Recurring,
+    Categories,
+    Goals,
+    Investments,
+    Settings,
+    /// Settings > Connected apps: personal API tokens and the Visor CLI login
+    Tokens,
+    /// The personal API and CLI documentation
+    Docs,
+    /// The CLI releases and their changelog
+    Releases,
+}
+
+impl Page {
+    #[must_use]
+    pub fn url(self) -> &'static str {
+        match self {
+            Self::Dashboard => "https://dashboard.visorfinance.app/",
+            Self::Transactions => "https://dashboard.visorfinance.app/transactions",
+            Self::Accounts => "https://dashboard.visorfinance.app/accounts",
+            Self::Cards => "https://dashboard.visorfinance.app/cards",
+            Self::Cashflow => "https://dashboard.visorfinance.app/cashflow",
+            Self::Projection => "https://dashboard.visorfinance.app/projection",
+            Self::Recurring => "https://dashboard.visorfinance.app/recurring",
+            Self::Categories => "https://dashboard.visorfinance.app/categories",
+            Self::Goals => "https://dashboard.visorfinance.app/goals",
+            Self::Investments => "https://dashboard.visorfinance.app/portfolio",
+            Self::Settings => "https://dashboard.visorfinance.app/settings",
+            Self::Tokens => "https://dashboard.visorfinance.app/settings/connected_apps",
+            Self::Docs => "https://docs.visorfinance.app/cli",
+            Self::Releases => "https://github.com/Visor-Finance/visor-cli/releases",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Subcommand)]
@@ -290,7 +349,8 @@ pub enum TransactionsCommand {
         after_help = "\
 Examples:
   visor tx list --from 2026-10-01 --category Mercado
-  visor tx list --from 2026-01-01 --to 2026-12-31 --all --json > 2026.json"
+  visor tx list --from 2026-01-01 --to 2026-12-31 --all --json > 2026.json
+  visor tx list --from 2026-10-01 --all --csv > outubro.csv"
     )]
     List(TransactionListArgs),
 
@@ -358,6 +418,10 @@ pub struct TransactionListArgs {
     /// Text in the description, merchant, or notes
     #[arg(long)]
     pub search: Option<String>,
+
+    /// Print CSV for a spreadsheet: one row per transaction, names instead of IDs
+    #[arg(long)]
+    pub csv: bool,
 
     #[command(flatten)]
     pub page: PageArgs,

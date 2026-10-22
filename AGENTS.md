@@ -20,3 +20,7 @@ cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 ## Release
 
 Use the `release` skill (`.claude/skills/release/SKILL.md`). Add user-facing changes under `## Unreleased` in `CHANGELOG.md` as you make them.
+
+## Generated files
+
+`dist-assets/` holds the shell completions and the man page that dist packs into each release. After changing a command or flag, run `VISOR_UPDATE_GENERATED=1 cargo test --test generated`; the test fails until they match.

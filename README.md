@@ -20,7 +20,9 @@ powershell -ExecutionPolicy Bypass -c "irm https://github.com/Visor-Finance/viso
 cargo install --git https://github.com/Visor-Finance/visor-cli
 ```
 
-Shell completions: `visor completions zsh > "${fpath[1]}/_visor"` (also `bash`, `fish`, `powershell`, `elvish`).
+Shell completions: `visor completions zsh > "${fpath[1]}/_visor"` (also `bash`, `fish`, `powershell`, `elvish`). Release archives also include them, with a man page, under `completions/` and `man/`.
+
+Verify a downloaded binary: `gh attestation verify visor-aarch64-apple-darwin.tar.xz --repo Visor-Finance/visor-cli`.
 
 ## Log in
 
@@ -87,6 +89,16 @@ visor tx list --from 2026-10-01 --type debit --all --json \
 
 Lists return one page; `--all` follows every cursor, and `--after <cursor>` continues from the cursor a page prints. The CLI retries `429` (after `retry-after`) and `5xx` responses with backoff. The API allows 60 requests per minute per token.
 
+Errors follow `--json` too: `{"error": {"code": "NOT_FOUND", "message": "...", "status": 404, "request_id": "...", "exit_code": 4}}` on standard error.
+
+```bash
+# A spreadsheet of this month
+visor tx list --from 2026-10-01 --all --csv > outubro.csv
+
+# Every HTTP request, for a support ticket (never prints the token)
+visor tx list --debug
+```
+
 ### Exit codes
 
 | Code | Meaning |
@@ -107,7 +119,9 @@ Lists return one page; `--all` follows every cursor, and `--after <cursor>` cont
 | `VISOR_SPACE` | Space name or ID, like `--space` |
 | `VISOR_CREDENTIAL_STORE` | `keyring` (default) or `file` |
 | `VISOR_CONFIG_DIR` | Config directory. Default: `$XDG_CONFIG_HOME/visor`, `~/.config/visor`, or `%APPDATA%\visor` |
-| `NO_COLOR` | Disables color in help output |
+| `NO_COLOR` | Disables color |
+| `VISOR_DEBUG` | `1` logs each HTTP request, like `--debug` |
+| `VISOR_NO_UPDATE_NOTIFIER` | `1` turns off the new-version notice (it is already off in CI and in pipes) |
 
 ## Development
 
