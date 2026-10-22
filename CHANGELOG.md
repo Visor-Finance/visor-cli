@@ -5,6 +5,8 @@ people who use the CLI: what they can do now, what changed, what to watch for.
 
 ## Unreleased
 
+## 0.2.0 - 2026-10-21
+
 - `visor auth login` now logs in through the browser: approve the login in Visor and choose its access. The login refreshes itself and appears as **Visor CLI** in Settings > Connected apps.
 - `visor auth login --no-browser` prints the login page URL instead of opening a browser.
 - After a login, the CLI shows the account (plan, access, login method, where the login is stored, and the space commands act on) and what to try next.
