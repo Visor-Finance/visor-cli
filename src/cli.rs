@@ -288,17 +288,25 @@ pub struct NotificationArgs {
 
 #[derive(Debug, Args)]
 pub struct PageArgs {
-    /// Results per page (transactions: up to 100, notifications: up to 50)
-    #[arg(long, value_parser = clap::value_parser!(u16).range(1..=100))]
-    pub limit: Option<u16>,
+    /// Maximum number of results; the CLI fetches as many pages as it needs
+    #[arg(long, default_value_t = 50, value_parser = clap::value_parser!(u32).range(1..=100_000))]
+    pub limit: u32,
 
-    /// Cursor from a previous page
+    /// Continue after the cursor that a previous list printed
     #[arg(long, conflicts_with = "all")]
     pub after: Option<String>,
 
-    /// Fetch every page
-    #[arg(long)]
+    /// Fetch every result, however many; each page counts toward the rate limit
+    #[arg(long, conflicts_with = "limit")]
     pub all: bool,
+}
+
+impl PageArgs {
+    /// The most results to fetch, or `None` for every one.
+    #[must_use]
+    pub fn max(&self) -> Option<usize> {
+        (!self.all).then(|| usize::try_from(self.limit).unwrap_or(usize::MAX))
+    }
 }
 
 #[derive(Debug, Subcommand)]

@@ -350,13 +350,19 @@ fn transaction_list_all_follows_every_cursor() {
     let first_page = harness
         .server
         .mock("GET", path.as_str())
-        .match_query(Matcher::Missing)
+        .match_query(Matcher::AllOf(vec![
+            Matcher::UrlEncoded("limit".into(), "100".into()),
+            Matcher::Regex("^limit=100$".into()),
+        ]))
         .with_body(json!({"data": [transaction()], "next_cursor": "c2"}).to_string())
         .create();
     let second_page = harness
         .server
         .mock("GET", path.as_str())
-        .match_query(Matcher::UrlEncoded("after".into(), "c2".into()))
+        .match_query(Matcher::AllOf(vec![
+            Matcher::UrlEncoded("after".into(), "c2".into()),
+            Matcher::UrlEncoded("limit".into(), "100".into()),
+        ]))
         .with_body(json!({"data": [second], "next_cursor": null}).to_string())
         .create();
 
@@ -965,4 +971,93 @@ fn no_update_notice_in_a_pipe() {
         .success()
         .stderr(predicate::str::contains("is out").not());
     releases.assert();
+}
+
+#[test]
+fn transaction_list_stops_at_50_by_default() {
+    let mut harness = Harness::new();
+    harness.spaces();
+    harness.reference_data();
+    let first = harness
+        .server
+        .mock("GET", format!("/v1/spaces/{SPACE}/transactions").as_str())
+        .match_query(Matcher::UrlEncoded("limit".into(), "50".into()))
+        .with_body(json!({"data": vec![transaction(); 50], "next_cursor": "c2"}).to_string())
+        .expect(1)
+        .create();
+    let more = harness
+        .server
+        .mock("GET", format!("/v1/spaces/{SPACE}/transactions").as_str())
+        .match_query(Matcher::UrlEncoded("after".into(), "c2".into()))
+        .expect(0)
+        .create();
+
+    harness
+        .visor()
+        .args(["tx", "list"])
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("raise `--limit`"));
+    first.assert();
+    more.assert();
+}
+
+#[test]
+fn transaction_list_limit_spans_pages_and_stops_at_the_total() {
+    let mut harness = Harness::new();
+    harness.spaces();
+    let path = format!("/v1/spaces/{SPACE}/transactions");
+    let page = |count: usize, cursor: &str| {
+        let rows: Vec<Value> = (0..count)
+            .map(|i| {
+                let mut tx = transaction();
+                tx["id"] = json!(format!("00000000-0000-4000-8000-{i:012}"));
+                tx
+            })
+            .collect();
+        json!({"data": rows, "next_cursor": cursor}).to_string()
+    };
+    let first = harness
+        .server
+        .mock("GET", path.as_str())
+        .match_query(Matcher::Regex("^limit=100$".into()))
+        .with_body(page(100, "c2"))
+        .expect(1)
+        .create();
+    // The second page asks only for what is left: 150 - 100 = 50.
+    let second = harness
+        .server
+        .mock("GET", path.as_str())
+        .match_query(Matcher::AllOf(vec![
+            Matcher::UrlEncoded("after".into(), "c2".into()),
+            Matcher::UrlEncoded("limit".into(), "50".into()),
+        ]))
+        .with_body(page(50, "c3"))
+        .expect(1)
+        .create();
+
+    let output = harness
+        .visor()
+        .args(["tx", "list", "--limit", "150", "--json"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let body: Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(body["data"].as_array().unwrap().len(), 150);
+    assert_eq!(body["next_cursor"], "c3");
+    first.assert();
+    second.assert();
+}
+
+#[test]
+fn all_and_limit_cannot_be_combined() {
+    Harness::new()
+        .visor()
+        .args(["tx", "list", "--all", "--limit", "10"])
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains("cannot be used with"));
 }

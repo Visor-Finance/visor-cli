@@ -165,18 +165,33 @@ pub(crate) fn client_for(
     }
 }
 
-/// Fetches one page, or every page with `--all`. `fetch` takes the cursor.
-fn paginate(page: &PageArgs, fetch: impl Fn(Option<&str>) -> Result<Value>) -> Result<Value> {
-    let mut body = fetch(page.after.as_deref())?;
-    if !page.all {
-        return Ok(body);
-    }
+/// Fetches pages until `--limit` results (default 50) or, with `--all`,
+/// until the last page, like `gh`'s `--limit`. `fetch` takes the cursor
+/// and the page size; `max_page` is the API's largest page. Each page
+/// counts toward the rate limit, so a long fetch shows its progress.
+fn paginate(
+    page: &PageArgs,
+    max_page: usize,
+    noun: &str,
+    fetch: impl Fn(Option<&str>, usize) -> Result<Value>,
+) -> Result<Value> {
+    let max = page.max();
+    let size = |fetched: usize| max.map_or(max_page, |max| (max - fetched).min(max_page));
+    let mut progress = output::Progress::new(noun);
+
+    let mut body = fetch(page.after.as_deref(), size(0))?;
+    let mut fetched = body["data"].as_array().map_or(0, Vec::len);
     while let Some(cursor) = body["next_cursor"].as_str().map(str::to_owned) {
-        let mut next = fetch(Some(&cursor))?;
+        if max.is_some_and(|max| fetched >= max) {
+            break;
+        }
+        progress.update(fetched);
+        let mut next = fetch(Some(&cursor), size(fetched))?;
         let rows = next["data"]
             .as_array_mut()
             .map(std::mem::take)
             .unwrap_or_default();
+        fetched += rows.len();
         body["data"]
             .as_array_mut()
             .ok_or_else(|| Error::Decode("`data` is not a list".into()))?
@@ -189,7 +204,7 @@ fn paginate(page: &PageArgs, fetch: impl Fn(Option<&str>) -> Result<Value>) -> R
 fn note_next_page(body: &Value) {
     if let Some(cursor) = body["next_cursor"].as_str() {
         output::note(&format!(
-            "More results: add `--after {cursor}`, or `--all` for every page."
+            "More results: raise `--limit`, use `--all` for every one, or continue with `--after {cursor}`."
         ));
     }
 }

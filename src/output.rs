@@ -146,6 +146,41 @@ impl Spinner {
     }
 }
 
+/// A running count on standard error while a list spans many pages, such
+/// as `1,200 transactions so far…`. Silent without a terminal.
+#[derive(Debug)]
+pub struct Progress {
+    noun: String,
+    live: bool,
+    shown: bool,
+}
+
+impl Progress {
+    #[must_use]
+    pub fn new(noun: &str) -> Self {
+        Self {
+            noun: noun.to_owned(),
+            live: io::stderr().is_terminal(),
+            shown: false,
+        }
+    }
+
+    pub fn update(&mut self, count: usize) {
+        if self.live {
+            eprint!("\r\x1b[K{count} {} so far…", self.noun);
+            self.shown = true;
+        }
+    }
+}
+
+impl Drop for Progress {
+    fn drop(&mut self) {
+        if self.shown {
+            eprint!("\r\x1b[K");
+        }
+    }
+}
+
 impl Drop for Spinner {
     fn drop(&mut self) {
         self.clear();

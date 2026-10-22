@@ -5,6 +5,9 @@ people who use the CLI: what they can do now, what changed, what to watch for.
 
 ## Unreleased
 
+- **Changed:** `--limit` on `tx list` and `notifications list` is now the most results to return (default 50), not the page size. The CLI fetches as many pages as it needs, like `gh`'s `--limit`. Before, a list returned one page and `--all` was the only way past it.
+- `--all` and `--limit` cannot be combined. A list that spans pages shows a running count on the terminal.
+
 ## 0.3.0 - 2026-10-21
 
 - `--json` errors are JSON too: `{"error": {"code", "message", "exit_code", ...}}` on standard error, with the HTTP status, details, and request ID for an API error.

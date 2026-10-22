@@ -434,11 +434,10 @@ pub fn overview(ctx: &Context) -> Result<()> {
 }
 
 pub fn notifications(ctx: &Context, ListOnly::List(args): ListOnly<NotificationArgs>) -> Result<()> {
-    let query = Query::new()
-        .flag("unread", args.unread)
-        .opt("limit", args.page.limit);
-    let body = paginate(&args.page, |after| {
+    let query = Query::new().flag("unread", args.unread);
+    let body = paginate(&args.page, 50, "notifications", |after, size| {
         let mut query = query.as_slice().to_vec();
+        query.push(("limit", size.to_string()));
         query.extend(after.map(|after| ("after", after.to_owned())));
         ctx.client.get_json("/v1/notifications", &query)
     })?;
