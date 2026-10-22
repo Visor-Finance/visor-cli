@@ -74,6 +74,23 @@ visor notifications list --unread
 - Amounts are positive. `--type debit` (the default) is money out, `--type credit` is money in. `18,90` and `18.90` both work.
 - `tx add` sends an `Idempotency-Key` and prints it. Pass the same `--idempotency-key` to retry safely: Visor records the transaction once.
 
+## Pix
+
+```bash
+visor pix maria@example.com 20,00 -d Almoço      # asks where to confirm, then waits
+visor pix 11987654321 50 --key-type phone --bank Nubank
+visor pix 123.456.789-09 20 --qr                 # confirm on your phone: shows a QR code
+visor pix maria@example.com 20 --open            # confirm on this computer: opens the browser
+visor pix maria@example.com 20 --no-wait --json  # print the Pix and its link, then exit
+visor pix status 7b2d5e91-…                      # read a Pix you started
+```
+
+`visor pix` starts a Pix and shows the page where you confirm it with biometrics at your bank; nothing is paid before that. On a terminal it asks where you confirm: on this computer (it opens the page) or on your phone (it shows the page as a QR code). The first Pix from a bank links the bank first. Then the CLI waits until the Pix is paid and prints its Pix ID (end-to-end ID), or fails with exit code 5 when the Pix fails, is canceled, or expires. Ctrl+C stops waiting, not the Pix.
+
+Pix needs the Premium plan and the browser login. The first time, `visor pix` opens the browser so you can allow Pix, then swaps the stored login for the new one and ends the old one; nothing else changes. Without a terminal, or with `--json`, it never opens anything: it fails with exit code 3 and asks you to run `visor pix` in a terminal once. A personal API token or `VISOR_TOKEN` cannot start a Pix.
+
+Without `--bank`, Visor uses the one bank you already linked; with several, the error lists them. A key that can be a CPF or a phone needs `--key-type cpf` or `--key-type phone`.
+
 ## Scripting
 
 `--json` prints the API response body unchanged, so the [API reference](https://docs.visorfinance.app) documents every field. Tables, notes, and errors never mix with it: data goes to stdout, everything else to stderr.
@@ -108,7 +125,7 @@ visor tx list --debug
 | 2 | Invalid usage, such as a bad flag or an unknown category name |
 | 3 | Not logged in, invalid or expired token, missing scope, or no Pro or Premium plan |
 | 4 | Not found |
-| 5 | Request rejected: validation, conflict, or idempotency conflict |
+| 5 | Request rejected: validation, conflict, or idempotency conflict; or a Pix that failed, was canceled, or expired |
 | 6 | Rate limited, network error, or Visor unavailable |
 
 ### Environment
@@ -120,6 +137,8 @@ visor tx list --debug
 | `VISOR_CREDENTIAL_STORE` | `keyring` (default) or `file` |
 | `VISOR_CONFIG_DIR` | Config directory. Default: `$XDG_CONFIG_HOME/visor`, `~/.config/visor`, or `%APPDATA%\visor` |
 | `NO_COLOR` | Disables color |
+| `BROWSER` | Command that opens a URL, instead of the system default |
+| `VISOR_FORCE_TTY` | `1` treats the session as a terminal for prompts, for a wrapper that relays them |
 | `VISOR_DEBUG` | `1` logs each HTTP request, like `--debug` |
 | `VISOR_NO_UPDATE_NOTIFIER` | `1` turns off the new-version notice (it is already off in CI and in pipes) |
 

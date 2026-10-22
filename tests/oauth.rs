@@ -31,6 +31,8 @@ impl Harness {
             .env("VISOR_CONFIG_DIR", self.config.path())
             .env("VISOR_CREDENTIAL_STORE", "file")
             .env_remove("VISOR_TOKEN")
+            .env_remove("VISOR_FORCE_TTY")
+            .env("BROWSER", "true")
             .env_remove("VISOR_SPACE");
         cmd
     }
@@ -362,4 +364,141 @@ fn a_personal_token_from_before_the_browser_login_still_works() {
 
     assert!(output.status.success());
     me_mock.assert();
+}
+
+/// Reads standard error up to the login page URL; returns what came before
+/// it and the URL.
+fn read_login_url(stderr: &mut impl BufRead, server_url: &str) -> (String, Url) {
+    let mut before = String::new();
+    loop {
+        let mut line = String::new();
+        assert_ne!(stderr.read_line(&mut line).unwrap(), 0, "no login URL: {before}");
+        if let Some(query) = line
+            .trim()
+            .strip_prefix(&format!("{server_url}/oauth/authorize?"))
+        {
+            return (before, Url::parse(&format!("http://x/?{query}")).unwrap());
+        }
+        before.push_str(&line);
+    }
+}
+
+fn pix(status: &str) -> Value {
+    let pending = status == "pending";
+    json!({"data": {
+        "id": "7b2d5e91-3c4a-4f68-9a0b-1c2d3e4f5a6b", "status": status,
+        "waiting_for": if pending { json!("bank_authorization") } else { Value::Null },
+        "amount": "20.00", "currency": "BRL", "pix_key_masked": "m***@example.com",
+        "recipient": null, "description": null, "bank": {"name": "Nubank", "linked": false},
+        "start_url": if pending { json!("https://dashboard.visorfinance.app/pix/payments/continue?ref=x") } else { Value::Null },
+        "end_to_end_id": if pending { Value::Null } else { json!("E60746948202610221531abcdef123456") },
+        "failure": null, "created_at": "2026-10-22T15:31:02Z", "paid_at": null
+    }})
+}
+
+#[test]
+fn pix_asks_for_pix_access_in_the_browser_and_retries_with_the_same_key() {
+    let mut harness = Harness::new();
+    harness.store(&oauth("a1", "r1", now() + 86400));
+    let missing_scope = harness
+        .server
+        .mock("POST", "/v1/pix-payments")
+        .match_header("authorization", "Bearer a1")
+        .with_status(403)
+        .with_body(
+            json!({"errors": [{"code": "INSUFFICIENT_SCOPE", "message": "Missing scope.",
+                               "details": {"required_scope": "pix:payments:write"}}]})
+            .to_string(),
+        )
+        .create();
+    let token = harness
+        .server
+        .mock("POST", "/oauth/token")
+        .match_body(Matcher::UrlEncoded(
+            "grant_type".into(),
+            "authorization_code".into(),
+        ))
+        .with_body(
+            json!({"access_token": "a2", "refresh_token": "r2", "expires_in": 86400, "token_type": "bearer",
+                   "scope": "pfm:read pfm:transactions:write pix:payments:write"})
+            .to_string(),
+        )
+        .create();
+    let revoke = harness
+        .server
+        .mock("POST", "/oauth/revoke")
+        .match_body(Matcher::AllOf(vec![
+            Matcher::UrlEncoded("client_id".into(), CLIENT_ID.into()),
+            Matcher::UrlEncoded("token".into(), "r1".into()),
+        ]))
+        .create();
+    let started = harness
+        .server
+        .mock("POST", "/v1/pix-payments")
+        .match_header("authorization", "Bearer a2")
+        .match_header("idempotency-key", "pix-1")
+        .with_status(201)
+        .with_body(pix("pending").to_string())
+        .create();
+    let completed = harness
+        .server
+        .mock("GET", "/v1/pix-payments/7b2d5e91-3c4a-4f68-9a0b-1c2d3e4f5a6b")
+        .match_header("authorization", "Bearer a2")
+        .with_body(pix("completed").to_string())
+        .create();
+
+    let mut child = harness
+        .command()
+        .args([
+            "pix",
+            "maria@example.com",
+            "20",
+            "--qr",
+            "--idempotency-key",
+            "pix-1",
+        ])
+        .env("VISOR_FORCE_TTY", "1")
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+
+    let mut stderr = BufReader::new(child.stderr.take().unwrap());
+    let (before, authorize) = read_login_url(&mut stderr, &harness.server.url());
+    assert!(before.contains("cannot start a Pix yet"), "{before}");
+    let param = |name: &str| {
+        authorize
+            .query_pairs()
+            .find(|(key, _)| key == name)
+            .map(|(_, value)| value.into_owned())
+            .unwrap()
+    };
+    assert_eq!(
+        param("scope"),
+        "pfm:read pfm:transactions:write pix:payments:write"
+    );
+
+    let callback = format!("{}?code=the-code&state={}", param("redirect_uri"), param("state"));
+    assert_eq!(reqwest::blocking::get(callback).unwrap().status().as_u16(), 200);
+
+    let status = child.wait().unwrap();
+    let mut rest = String::new();
+    std::io::Read::read_to_string(&mut stderr, &mut rest).unwrap();
+    assert!(status.success(), "{rest}");
+    assert!(rest.contains("The Visor CLI can start Pix now"), "{rest}");
+    assert!(rest.contains("First you link Nubank to Visor"), "{rest}");
+    missing_scope.assert();
+    token.assert();
+    revoke.assert();
+    started.assert();
+    completed.assert();
+
+    let stored = harness.stored();
+    assert_eq!(stored["access_token"], "a2");
+    assert_eq!(stored["refresh_token"], "r2");
+    assert_eq!(
+        stored["scope"],
+        "pfm:read pfm:transactions:write pix:payments:write"
+    );
 }

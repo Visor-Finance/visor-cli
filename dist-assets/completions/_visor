@@ -1455,6 +1455,81 @@ _arguments "${_arguments_options[@]}" : \
 '--help[Print help]' \
 && ret=0
 ;;
+(pix)
+_arguments "${_arguments_options[@]}" : \
+'-d+[What the Pix is for, up to 140 characters]:DESCRIPTION:_default' \
+'--description=[What the Pix is for, up to 140 characters]:DESCRIPTION:_default' \
+'--bank=[Bank the Pix comes from \[default\: the one bank you already linked\]]:BANK:_default' \
+'--key-type=[Key type, for a key that can be a CPF or a phone]:KEY_TYPE:((cpf\:""
+cnpj\:""
+phone\:""
+email\:""
+evp\:"A random key"))' \
+'--idempotency-key=[Reuse a key to retry without starting a second Pix \[default\: a new UUID\]]:IDEMPOTENCY_KEY:_default' \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'(--open)--qr[Confirm on your phone\: show a QR code of the confirmation page]' \
+'--open[Confirm on this computer\: open the confirmation page in the browser]' \
+'--no-wait[Print the Pix ID and the link without waiting for the Pix to finish]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+':key -- Pix key\: email, CPF, CNPJ, phone (with or without +55), or random key:_default' \
+':amount -- Amount in BRL, such as 20.00 or 20,00:_default' \
+":: :_visor__subcmd__pix_commands" \
+"*::: :->pix" \
+&& ret=0
+
+    case $state in
+    (pix)
+        words=($line[3] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-pix-command-$line[3]:"
+        case $line[3] in
+            (status)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':id -- Pix ID, from `visor pix`:_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__pix__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-pix-help-command-$line[1]:"
+        case $line[1] in
+            (status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
 (notifications)
 _arguments "${_arguments_options[@]}" : \
 '-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
@@ -1872,6 +1947,26 @@ esac
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
+(pix)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__pix_commands" \
+"*::: :->pix" \
+&& ret=0
+
+    case $state in
+    (pix)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-pix-command-$line[1]:"
+        case $line[1] in
+            (status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
 (notifications)
 _arguments "${_arguments_options[@]}" : \
 ":: :_visor__subcmd__help__subcmd__notifications_commands" \
@@ -1931,6 +2026,7 @@ _visor_commands() {
 'investments:List investments' \
 'connections:List Open Finance connections and their sync status' \
 'overview:Show balances, the month so far, and the projection for a space' \
+'pix:Send a Pix that you confirm with biometrics at your bank (Premium)' \
 'notifications:List notifications' \
 'completions:Print a shell completion script' \
 'help:Print this message or the help of the given subcommand(s)' \
@@ -2227,6 +2323,7 @@ _visor__subcmd__help_commands() {
 'investments:List investments' \
 'connections:List Open Finance connections and their sync status' \
 'overview:Show balances, the month so far, and the projection for a space' \
+'pix:Send a Pix that you confirm with biometrics at your bank (Premium)' \
 'notifications:List notifications' \
 'completions:Print a shell completion script' \
 'help:Print this message or the help of the given subcommand(s)' \
@@ -2400,6 +2497,18 @@ _visor__subcmd__help__subcmd__open_commands() {
 _visor__subcmd__help__subcmd__overview_commands() {
     local commands; commands=()
     _describe -t commands 'visor help overview commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__pix_commands] )) ||
+_visor__subcmd__help__subcmd__pix_commands() {
+    local commands; commands=(
+'status:Show the status of a Pix you started' \
+    )
+    _describe -t commands 'visor help pix commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__pix__subcmd__status_commands] )) ||
+_visor__subcmd__help__subcmd__pix__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help pix status commands' commands "$@"
 }
 (( $+functions[_visor__subcmd__help__subcmd__spaces_commands] )) ||
 _visor__subcmd__help__subcmd__spaces_commands() {
@@ -2594,6 +2703,37 @@ _visor__subcmd__open_commands() {
 _visor__subcmd__overview_commands() {
     local commands; commands=()
     _describe -t commands 'visor overview commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__pix_commands] )) ||
+_visor__subcmd__pix_commands() {
+    local commands; commands=(
+'status:Show the status of a Pix you started' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor pix commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__pix__subcmd__help_commands] )) ||
+_visor__subcmd__pix__subcmd__help_commands() {
+    local commands; commands=(
+'status:Show the status of a Pix you started' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor pix help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__pix__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__pix__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor pix help help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__pix__subcmd__help__subcmd__status_commands] )) ||
+_visor__subcmd__pix__subcmd__help__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor pix help status commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__pix__subcmd__status_commands] )) ||
+_visor__subcmd__pix__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor pix status commands' commands "$@"
 }
 (( $+functions[_visor__subcmd__spaces_commands] )) ||
 _visor__subcmd__spaces_commands() {

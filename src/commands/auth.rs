@@ -28,7 +28,7 @@ pub fn run(
         }
         AuthCommand::Login { no_browser, .. } => {
             banner::print();
-            let credential = oauth::login(&global.auth_url, !no_browser)?;
+            let credential = oauth::login(&global.auth_url, !no_browser, None)?;
             finish_login(store, config, &global.api_url, &credential, format)
         }
         AuthCommand::Logout => logout(store),

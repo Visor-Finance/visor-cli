@@ -131,6 +131,14 @@ pub enum Command {
     /// Show balances, the month so far, and the projection for a space
     Overview,
 
+    /// Send a Pix that you confirm with biometrics at your bank (Premium)
+    #[command(
+        args_conflicts_with_subcommands = true,
+        subcommand_negates_reqs = true,
+        after_help = PIX_HELP
+    )]
+    Pix(PixArgs),
+
     /// List notifications
     #[command(subcommand)]
     Notifications(ListOnly<NotificationArgs>),
@@ -274,6 +282,103 @@ pub struct InstallmentArgs {
 pub enum InstallmentStatus {
     Active,
     Completed,
+}
+
+const PIX_HELP: &str = "\
+Nothing is paid until you confirm the Pix with biometrics at your bank. The CLI
+asks where: on this computer it opens the confirmation page, on your phone it
+shows a QR code of that page. The first Pix from a bank links the bank first.
+Then the CLI waits until the Pix is paid, fails, or expires.
+
+Pix through the CLI needs the Premium plan and the browser login (`visor auth
+login`). The first time, the CLI opens the browser so you can allow Pix.
+
+Examples:
+  visor pix maria@example.com 20,00 -d Almoço
+  visor pix 11987654321 50 --key-type phone --bank Nubank
+  visor pix 123.456.789-09 20 --qr
+  visor pix maria@example.com 20 --no-wait --json
+  visor pix status 7b2d5e91-3c4a-4f68-9a0b-1c2d3e4f5a6b";
+
+#[derive(Debug, Args)]
+pub struct PixArgs {
+    #[command(subcommand)]
+    pub command: Option<PixCommand>,
+
+    #[command(flatten)]
+    pub send: PixSendArgs,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PixCommand {
+    /// Show the status of a Pix you started
+    Status {
+        /// Pix ID, from `visor pix`
+        #[arg(value_parser = input::id)]
+        id: String,
+    },
+}
+
+#[derive(Debug, Args)]
+pub struct PixSendArgs {
+    /// Pix key: email, CPF, CNPJ, phone (with or without +55), or random key
+    #[arg(required = true)]
+    pub key: Option<String>,
+
+    /// Amount in BRL, such as 20.00 or 20,00
+    #[arg(required = true, value_parser = input::pix_amount, allow_negative_numbers = true)]
+    pub amount: Option<String>,
+
+    /// What the Pix is for, up to 140 characters
+    #[arg(long, short = 'd')]
+    pub description: Option<String>,
+
+    /// Bank the Pix comes from [default: the one bank you already linked]
+    #[arg(long)]
+    pub bank: Option<String>,
+
+    /// Key type, for a key that can be a CPF or a phone
+    #[arg(long, value_enum)]
+    pub key_type: Option<PixKeyType>,
+
+    /// Confirm on your phone: show a QR code of the confirmation page
+    #[arg(long, conflicts_with = "open")]
+    pub qr: bool,
+
+    /// Confirm on this computer: open the confirmation page in the browser
+    #[arg(long)]
+    pub open: bool,
+
+    /// Print the Pix ID and the link without waiting for the Pix to finish
+    #[arg(long)]
+    pub no_wait: bool,
+
+    /// Reuse a key to retry without starting a second Pix [default: a new UUID]
+    #[arg(long, value_parser = input::idempotency_key)]
+    pub idempotency_key: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum PixKeyType {
+    Cpf,
+    Cnpj,
+    Phone,
+    Email,
+    /// A random key
+    Evp,
+}
+
+impl PixKeyType {
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Cpf => "cpf",
+            Self::Cnpj => "cnpj",
+            Self::Phone => "phone",
+            Self::Email => "email",
+            Self::Evp => "evp",
+        }
+    }
 }
 
 #[derive(Debug, Args)]

@@ -39,6 +39,16 @@ pub fn amount(value: &str) -> Result<String, String> {
     Ok(amount)
 }
 
+/// Normalizes a Pix amount like [`amount`]; a Pix only sends money.
+pub fn pix_amount(value: &str) -> Result<String, String> {
+    if value.trim().starts_with('-') {
+        return Err(format!(
+            "`{value}` is negative; a Pix amount is positive, such as 20.00"
+        ));
+    }
+    amount(value)
+}
+
 /// Validates a `YYYY-MM-DD` date.
 pub fn date(value: &str) -> Result<String, String> {
     NaiveDate::parse_from_str(value, "%Y-%m-%d")
@@ -117,6 +127,16 @@ mod tests {
         for value in ["", "-5", "abc", "1.234", "0", "0,00", "1e3", ".5", "1.2.3"] {
             assert!(amount(value).is_err(), "{value} should be rejected");
         }
+    }
+
+    #[test]
+    fn pix_amounts_are_positive() {
+        assert_eq!(pix_amount("20,00").unwrap(), "20.00");
+        assert!(
+            pix_amount("-20")
+                .unwrap_err()
+                .contains("a Pix amount is positive")
+        );
     }
 
     #[test]

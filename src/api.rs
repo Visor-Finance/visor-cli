@@ -14,6 +14,8 @@ use crate::models::{Account, Category, Me, Space, Tag};
 pub const ENDPOINTS: &[(&str, &str)] = &[
     ("GET", "/v1/me"),
     ("GET", "/v1/notifications"),
+    ("POST", "/v1/pix-payments"),
+    ("GET", "/v1/pix-payments/{pix_payment_id}"),
     ("GET", "/v1/spaces"),
     ("GET", "/v1/spaces/{space_id}/accounts"),
     ("GET", "/v1/spaces/{space_id}/cards"),
@@ -117,6 +119,15 @@ impl Client {
 
     pub fn notifications(&self, query: &Query) -> Result<Value> {
         self.get_json("/v1/notifications", query.as_slice())
+    }
+
+    /// Starts a Pix; the user confirms it at its `start_url`.
+    pub fn create_pix_payment(&self, body: &Value, idempotency_key: &str) -> Result<Reply> {
+        self.post_json("/v1/pix-payments", body, idempotency_key)
+    }
+
+    pub fn pix_payment(&self, pix_payment_id: &str) -> Result<Value> {
+        self.get_json(&format!("/v1/pix-payments/{pix_payment_id}"), &[])
     }
 
     pub fn transactions(&self, space_id: &str, query: &Query) -> Result<Value> {
