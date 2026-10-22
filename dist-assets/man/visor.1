@@ -1,0 +1,103 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH visor 1  "visor 0.2.0" 
+.SH NAME
+visor \- Your Visor finances from the terminal
+.SH SYNOPSIS
+\fBvisor\fR [\fB\-\-json\fR] [\fB\-s\fR|\fB\-\-space\fR] [\fB\-\-debug\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fB\-V\fR|\fB\-\-version\fR] [\fIsubcommands\fR]
+.SH DESCRIPTION
+Your Visor finances from the terminal
+.SH OPTIONS
+.TP
+\fB\-\-json\fR
+Print the API response body as JSON instead of a table
+.TP
+\fB\-s\fR, \fB\-\-space\fR \fI<SPACE>\fR
+Space to act on, by name or ID [default: the one set with `visor spaces use`]
+.TP
+\fB\-\-debug\fR
+Print each HTTP request (method, URL, status, time, request ID) on standard error
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version
+.SH SUBCOMMANDS
+.TP
+visor\-auth(1)
+Log in, log out, and check the stored login
+.TP
+visor\-whoami(1)
+Show who is logged in, how, and the space commands act on
+.TP
+visor\-doctor(1)
+Check the CLI version, the login, and the connection to Visor
+.TP
+visor\-open(1)
+Open Visor in the browser: the dashboard or a page of it
+.TP
+visor\-me(1)
+Show the user the token belongs to
+.TP
+visor\-spaces(1)
+List spaces and choose the default one
+.TP
+visor\-transactions(1)
+List, record, edit, and delete transactions
+.TP
+visor\-accounts(1)
+List accounts
+.TP
+visor\-categories(1)
+List categories
+.TP
+visor\-tags(1)
+List tags
+.TP
+visor\-cards(1)
+List credit cards and their bills
+.TP
+visor\-subscriptions(1)
+List subscriptions
+.TP
+visor\-fixed\-bills(1)
+List fixed bills, such as rent or utilities
+.TP
+visor\-installments(1)
+List installment plans
+.TP
+visor\-goals(1)
+List goals
+.TP
+visor\-investments(1)
+List investments
+.TP
+visor\-connections(1)
+List Open Finance connections and their sync status
+.TP
+visor\-overview(1)
+Show balances, the month so far, and the projection for a space
+.TP
+visor\-notifications(1)
+List notifications
+.TP
+visor\-completions(1)
+Print a shell completion script
+.TP
+visor\-help(1)
+Print this message or the help of the given subcommand(s)
+.SH EXTRA
+Authentication:
+  Run `visor auth login` to log in through the browser (Premium plan). On a
+  machine without a browser, use a personal API token from
+  https://dashboard.visorfinance.app/settings/connected_apps with
+  `visor auth login \-\-with\-token`. VISOR_TOKEN overrides the stored login.
+
+Exit codes:
+  0 success, 1 failure, 2 invalid usage, 3 not authenticated or not allowed,
+  4 not found, 5 request rejected, 6 rate limited or Visor unavailable
+
+Docs: https://docs.visorfinance.app
+.SH VERSION
+v0.2.0

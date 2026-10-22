@@ -4,21 +4,17 @@
 
 use std::time::Duration;
 
-use serde::Deserialize;
 use serde_json::json;
 
 use crate::cli::Global;
-use crate::client::{self, Client};
+use crate::client::Client;
 use crate::commands::client_for;
 use crate::config::{self, Config};
 use crate::credentials::{self, Credential, Source, Store};
 use crate::error::{Error, Result};
 use crate::models::Me;
 use crate::output::{self, Format, Paint};
-use crate::{api, resolve};
-
-const RELEASES_URL: &str = "https://api.github.com/repos/Visor-Finance/visor-cli/releases/latest";
-const UPGRADE: &str = "brew upgrade visor-finance/tap/visor, or run the installer again";
+use crate::{api, resolve, update};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Outcome {
@@ -97,11 +93,11 @@ pub fn run(global: &Global, format: Format) -> Result<()> {
 /// Compares this build with the latest GitHub release.
 fn version() -> Check {
     let current = env!("CARGO_PKG_VERSION");
-    match latest_release() {
-        Some(latest) if newer(&latest, current) => Check::new(
+    match update::latest_release(Duration::from_secs(3)) {
+        Some(latest) if update::newer(&latest, current) => Check::new(
             "CLI version",
             Outcome::Warn,
-            format!("{current}; {latest} is out: {UPGRADE}"),
+            format!("{current}; {latest} is out: {}", update::UPGRADE),
         ),
         Some(_) => Check::new("CLI version", Outcome::Ok, format!("{current} (latest)")),
         None => Check::new(
@@ -110,32 +106,6 @@ fn version() -> Check {
             format!("{current} (could not check for updates)"),
         ),
     }
-}
-
-fn latest_release() -> Option<String> {
-    #[derive(Deserialize)]
-    struct Release {
-        tag_name: String,
-    }
-    let url = std::env::var("VISOR_RELEASES_URL").unwrap_or_else(|_| RELEASES_URL.to_owned());
-    let release: Release = client::http_with_timeout(Duration::from_secs(3))
-        .ok()?
-        .get(url)
-        .header(reqwest::header::ACCEPT, "application/vnd.github+json")
-        .send()
-        .ok()?
-        .error_for_status()
-        .ok()?
-        .json()
-        .ok()?;
-    Some(release.tag_name.trim_start_matches('v').to_owned())
-}
-
-/// True when the dotted version `a` is newer than `b`.
-fn newer(a: &str, b: &str) -> bool {
-    let parts =
-        |version: &str| -> Vec<u64> { version.split('.').map(|part| part.parse().unwrap_or(0)).collect() };
-    parts(a) > parts(b)
 }
 
 type Login = (Check, Option<(Credential, Source)>);
@@ -205,14 +175,6 @@ fn space(client: &Client, config: &Config) -> Check {
 mod tests {
     use super::*;
     use crate::commands::status;
-
-    #[test]
-    fn compares_versions_by_number() {
-        assert!(newer("0.10.0", "0.9.1"));
-        assert!(newer("1.0.0", "0.99.99"));
-        assert!(!newer("0.2.0", "0.2.0"));
-        assert!(!newer("0.1.9", "0.2.0"));
-    }
 
     #[test]
     fn status_access_matches_the_consent_screen() {

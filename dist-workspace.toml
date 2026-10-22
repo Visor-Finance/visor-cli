@@ -18,3 +18,7 @@ install-updater = false
 # Homebrew formula repository; publishing needs the HOMEBREW_TAP_TOKEN secret
 tap = "Visor-Finance/homebrew-tap"
 publish-jobs = ["homebrew"]
+# Shell completions and the man page in every archive (see tests/generated.rs)
+include = ["dist-assets/completions/", "dist-assets/man/"]
+# Sign each artifact with GitHub artifact attestations (gh attestation verify)
+github-attestations = true

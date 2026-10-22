@@ -5,6 +5,13 @@ people who use the CLI: what they can do now, what changed, what to watch for.
 
 ## Unreleased
 
+- `--json` errors are JSON too: `{"error": {"code", "message", "exit_code", ...}}` on standard error, with the HTTP status, details, and request ID for an API error.
+- `--debug` (or `VISOR_DEBUG=1`) prints each HTTP request on standard error: method, URL, status, time, and request ID, never the token.
+- `visor tx list --csv` exports transactions for a spreadsheet, with names instead of IDs and signed amounts. Text that a spreadsheet would run as a formula is escaped.
+- `visor open [page]` opens the dashboard, a page of it, the docs, or the releases in the browser; `--print` prints the URL.
+- The CLI tells you once a day, at most, when a new version is out. It never slows a command, and it stays quiet in a pipe, in CI, or with `VISOR_NO_UPDATE_NOTIFIER=1`.
+- Release archives include shell completions (bash, zsh, fish) and a man page, and every artifact has a GitHub attestation: `gh attestation verify <file> --repo Visor-Finance/visor-cli`.
+
 ## 0.2.0 - 2026-10-21
 
 - `visor auth login` now logs in through the browser: approve the login in Visor and choose its access. The login refreshes itself and appears as **Visor CLI** in Settings > Connected apps.

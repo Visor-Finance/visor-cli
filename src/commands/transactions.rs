@@ -9,9 +9,9 @@ use crate::cli::{
 };
 use crate::error::{Error, Result};
 use crate::input;
-use crate::models::{Account, Category, Transaction};
-use crate::output;
+use crate::models::{Account, Category, Tag, Transaction};
 use crate::resolve::{self, Named};
+use crate::{csv, output};
 
 pub fn run(ctx: &Context, command: TransactionsCommand) -> Result<()> {
     let space = ctx.space_id()?;
@@ -74,6 +74,11 @@ fn list(ctx: &Context, space: &str, args: &TransactionListArgs) -> Result<()> {
 
     let transactions: Vec<Transaction> = api::data(body.clone())?;
     let names = Names::fetch(ctx, space)?;
+    if args.csv {
+        print_csv(&transactions, &names, &ctx.client.tags_typed(space)?)?;
+        note_next_page(&body);
+        return Ok(());
+    }
     let mut table = output::table(&["date", "description", "category", "account", "amount", "id"]);
     for tx in &transactions {
         table.add_row(vec![
@@ -87,6 +92,55 @@ fn list(ctx: &Context, space: &str, args: &TransactionListArgs) -> Result<()> {
     }
     output::print_table(&table, "No transactions found.")?;
     note_next_page(&body);
+    Ok(())
+}
+
+/// One row per transaction. The amount is signed (a debit is negative) so
+/// a spreadsheet can sum the column.
+fn print_csv(transactions: &[Transaction], names: &Names, tags: &[Tag]) -> Result<()> {
+    let header = [
+        "date",
+        "time",
+        "description",
+        "amount",
+        "currency",
+        "type",
+        "category",
+        "account",
+        "tags",
+        "merchant",
+        "notes",
+        "status",
+        "ignored",
+        "source",
+        "id",
+    ];
+    output::line(&csv::row(&header.map(str::to_owned)))?;
+    let tag_name = |id: &String| {
+        tags.iter()
+            .find(|tag| &tag.id == id)
+            .map_or(id.clone(), |tag| tag.name.clone())
+    };
+    for tx in transactions {
+        let sign = if tx.kind == "debit" { "-" } else { "" };
+        output::line(&csv::row(&[
+            output::local_date(&tx.transacted_at),
+            tx.transacted_at.clone(),
+            csv::text(&tx.description),
+            format!("{sign}{}", tx.amount),
+            tx.currency_code.clone(),
+            tx.kind.clone(),
+            csv::text(&names.category(tx.category_id.as_deref())),
+            csv::text(&names.account(&tx.account_id)),
+            csv::text(&tx.tag_ids.iter().map(tag_name).collect::<Vec<_>>().join("; ")),
+            csv::text(tx.merchant_name.as_deref().unwrap_or_default()),
+            csv::text(tx.notes.as_deref().unwrap_or_default()),
+            tx.status.clone(),
+            tx.ignored.to_string(),
+            tx.source.clone(),
+            tx.id.clone(),
+        ]))?;
+    }
     Ok(())
 }
 
