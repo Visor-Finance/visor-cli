@@ -9,8 +9,8 @@ use crate::oauth::DEFAULT_AUTH_URL;
 
 const AFTER_HELP: &str = "\
 Authentication:
-  Run `visor auth login` to log in through the browser (Premium plan). On a
-  machine without a browser, use a personal API token from
+  Run `visor auth login` to log in through the browser (Pro or Premium
+  plan). On a machine without a browser, use a personal API token from
   https://dashboard.visorfinance.app/settings/connected_apps with
   `visor auth login --with-token`. VISOR_TOKEN overrides the stored login.
 
