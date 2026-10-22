@@ -5,6 +5,8 @@ people who use the CLI: what they can do now, what changed, what to watch for.
 
 ## Unreleased
 
+## 0.4.0 - 2026-10-21
+
 - **Changed:** `--limit` on `tx list` and `notifications list` is now the most results to return (default 50), not the page size. The CLI fetches as many pages as it needs, like `gh`'s `--limit`. Before, a list returned one page and `--all` was the only way past it.
 - `--all` and `--limit` cannot be combined. A list that spans pages shows a running count on the terminal.
 - A loader shows while the CLI waits for Visor, on a terminal only, after 150 ms so fast commands never flicker. A multi-page list shows its running count.
