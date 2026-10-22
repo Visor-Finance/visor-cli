@@ -309,14 +309,14 @@ _arguments "${_arguments_options[@]}" : \
 credit\:"Money in"))' \
 '--ignored=[Only ignored (true) or only counted (false) transactions]:IGNORED:(true false)' \
 '--search=[Text in the description, merchant, or notes]:SEARCH:_default' \
-'--limit=[Results per page (transactions\: up to 100, notifications\: up to 50)]:LIMIT:_default' \
-'(--all)--after=[Cursor from a previous page]:AFTER:_default' \
+'--limit=[Maximum number of results; the CLI fetches as many pages as it needs]:LIMIT:_default' \
+'(--all)--after=[Continue after the cursor that a previous list printed]:AFTER:_default' \
 '-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
 '--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
 '--api-url=[API base URL]:API_URL:_default' \
 '--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
 '--csv[Print CSV for a spreadsheet\: one row per transaction, names instead of IDs]' \
-'--all[Fetch every page]' \
+'(--limit)--all[Fetch every result, however many; each page counts toward the rate limit]' \
 '--json[Print the API response body as JSON instead of a table]' \
 '--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
 '-h[Print help (see more with '\''--help'\'')]' \
@@ -334,14 +334,14 @@ _arguments "${_arguments_options[@]}" : \
 credit\:"Money in"))' \
 '--ignored=[Only ignored (true) or only counted (false) transactions]:IGNORED:(true false)' \
 '--search=[Text in the description, merchant, or notes]:SEARCH:_default' \
-'--limit=[Results per page (transactions\: up to 100, notifications\: up to 50)]:LIMIT:_default' \
-'(--all)--after=[Cursor from a previous page]:AFTER:_default' \
+'--limit=[Maximum number of results; the CLI fetches as many pages as it needs]:LIMIT:_default' \
+'(--all)--after=[Continue after the cursor that a previous list printed]:AFTER:_default' \
 '-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
 '--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
 '--api-url=[API base URL]:API_URL:_default' \
 '--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
 '--csv[Print CSV for a spreadsheet\: one row per transaction, names instead of IDs]' \
-'--all[Fetch every page]' \
+'(--limit)--all[Fetch every result, however many; each page counts toward the rate limit]' \
 '--json[Print the API response body as JSON instead of a table]' \
 '--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
 '-h[Print help (see more with '\''--help'\'')]' \
@@ -518,14 +518,14 @@ _arguments "${_arguments_options[@]}" : \
 credit\:"Money in"))' \
 '--ignored=[Only ignored (true) or only counted (false) transactions]:IGNORED:(true false)' \
 '--search=[Text in the description, merchant, or notes]:SEARCH:_default' \
-'--limit=[Results per page (transactions\: up to 100, notifications\: up to 50)]:LIMIT:_default' \
-'(--all)--after=[Cursor from a previous page]:AFTER:_default' \
+'--limit=[Maximum number of results; the CLI fetches as many pages as it needs]:LIMIT:_default' \
+'(--all)--after=[Continue after the cursor that a previous list printed]:AFTER:_default' \
 '-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
 '--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
 '--api-url=[API base URL]:API_URL:_default' \
 '--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
 '--csv[Print CSV for a spreadsheet\: one row per transaction, names instead of IDs]' \
-'--all[Fetch every page]' \
+'(--limit)--all[Fetch every result, however many; each page counts toward the rate limit]' \
 '--json[Print the API response body as JSON instead of a table]' \
 '--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
 '-h[Print help (see more with '\''--help'\'')]' \
@@ -543,14 +543,14 @@ _arguments "${_arguments_options[@]}" : \
 credit\:"Money in"))' \
 '--ignored=[Only ignored (true) or only counted (false) transactions]:IGNORED:(true false)' \
 '--search=[Text in the description, merchant, or notes]:SEARCH:_default' \
-'--limit=[Results per page (transactions\: up to 100, notifications\: up to 50)]:LIMIT:_default' \
-'(--all)--after=[Cursor from a previous page]:AFTER:_default' \
+'--limit=[Maximum number of results; the CLI fetches as many pages as it needs]:LIMIT:_default' \
+'(--all)--after=[Continue after the cursor that a previous list printed]:AFTER:_default' \
 '-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
 '--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
 '--api-url=[API base URL]:API_URL:_default' \
 '--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
 '--csv[Print CSV for a spreadsheet\: one row per transaction, names instead of IDs]' \
-'--all[Fetch every page]' \
+'(--limit)--all[Fetch every result, however many; each page counts toward the rate limit]' \
 '--json[Print the API response body as JSON instead of a table]' \
 '--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
 '-h[Print help (see more with '\''--help'\'')]' \
@@ -1477,14 +1477,14 @@ _arguments "${_arguments_options[@]}" : \
         case $line[1] in
             (list)
 _arguments "${_arguments_options[@]}" : \
-'--limit=[Results per page (transactions\: up to 100, notifications\: up to 50)]:LIMIT:_default' \
-'(--all)--after=[Cursor from a previous page]:AFTER:_default' \
+'--limit=[Maximum number of results; the CLI fetches as many pages as it needs]:LIMIT:_default' \
+'(--all)--after=[Continue after the cursor that a previous list printed]:AFTER:_default' \
 '-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
 '--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
 '--api-url=[API base URL]:API_URL:_default' \
 '--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
 '--unread[Only unread notifications]' \
-'--all[Fetch every page]' \
+'(--limit)--all[Fetch every result, however many; each page counts toward the rate limit]' \
 '--json[Print the API response body as JSON instead of a table]' \
 '--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
 '-h[Print help]' \
@@ -1493,14 +1493,14 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (ls)
 _arguments "${_arguments_options[@]}" : \
-'--limit=[Results per page (transactions\: up to 100, notifications\: up to 50)]:LIMIT:_default' \
-'(--all)--after=[Cursor from a previous page]:AFTER:_default' \
+'--limit=[Maximum number of results; the CLI fetches as many pages as it needs]:LIMIT:_default' \
+'(--all)--after=[Continue after the cursor that a previous list printed]:AFTER:_default' \
 '-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
 '--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
 '--api-url=[API base URL]:API_URL:_default' \
 '--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
 '--unread[Only unread notifications]' \
-'--all[Fetch every page]' \
+'(--limit)--all[Fetch every result, however many; each page counts toward the rate limit]' \
 '--json[Print the API response body as JSON instead of a table]' \
 '--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
 '-h[Print help]' \

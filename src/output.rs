@@ -25,6 +25,7 @@ pub fn json(value: &Value) -> Result<()> {
 /// Writes a line to stdout. A closed pipe (`visor tx list | head`) is not an
 /// error worth reporting, so it ends the process quietly.
 pub fn line(text: &str) -> Result<()> {
+    crate::activity::stop();
     let mut stdout = io::stdout().lock();
     match writeln!(stdout, "{text}") {
         Err(error) if error.kind() == io::ErrorKind::BrokenPipe => std::process::exit(0),
@@ -33,6 +34,7 @@ pub fn line(text: &str) -> Result<()> {
 }
 
 pub fn note(text: &str) {
+    crate::activity::stop();
     eprintln!("{text}");
 }
 

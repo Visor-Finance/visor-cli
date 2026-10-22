@@ -87,7 +87,7 @@ visor tx list --from 2026-10-01 --type debit --all --json \
   | jq -r '.data | group_by(.category_id)[] | [.[0].category_id, (map(.amount | tonumber) | add)] | @tsv'
 ```
 
-Lists return one page; `--all` follows every cursor, and `--after <cursor>` continues from the cursor a page prints. The CLI retries `429` (after `retry-after`) and `5xx` responses with backoff. The API allows 60 requests per minute per token.
+Lists return up to `--limit` results (default 50), fetching as many pages as needed; `--all` returns every result, and `--after <cursor>` continues from the cursor a list prints. Each page of 100 counts toward the rate limit, so prefer `--from`/`--to` over `--all` on a long history. The CLI retries `429` (after `retry-after`) and `5xx` responses with backoff. The API allows 60 requests per minute per token.
 
 Errors follow `--json` too: `{"error": {"code": "NOT_FOUND", "message": "...", "status": 404, "request_id": "...", "exit_code": 4}}` on standard error.
 

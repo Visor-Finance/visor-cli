@@ -166,13 +166,13 @@ credit\t'Money in'"
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from list" -l ignored -d 'Only ignored (true) or only counted (false) transactions' -r -f -a "true\t''
 false\t''"
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from list" -l search -d 'Text in the description, merchant, or notes' -r
-complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from list" -l limit -d 'Results per page (transactions: up to 100, notifications: up to 50)' -r
-complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from list" -l after -d 'Cursor from a previous page' -r
+complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from list" -l limit -d 'Maximum number of results; the CLI fetches as many pages as it needs' -r
+complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from list" -l after -d 'Continue after the cursor that a previous list printed' -r
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from list" -s s -l space -d 'Space to act on, by name or ID [default: the one set with `visor spaces use`]' -r
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from list" -l api-url -d 'API base URL' -r
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from list" -l auth-url -d 'Base URL of the browser login (OAuth authorization server)' -r
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from list" -l csv -d 'Print CSV for a spreadsheet: one row per transaction, names instead of IDs'
-complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from list" -l all -d 'Fetch every page'
+complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from list" -l all -d 'Fetch every result, however many; each page counts toward the rate limit'
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from list" -l json -d 'Print the API response body as JSON instead of a table'
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from list" -l debug -d 'Print each HTTP request (method, URL, status, time, request ID) on standard error'
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from list" -s h -l help -d 'Print help (see more with \'--help\')'
@@ -186,13 +186,13 @@ credit\t'Money in'"
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from ls" -l ignored -d 'Only ignored (true) or only counted (false) transactions' -r -f -a "true\t''
 false\t''"
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from ls" -l search -d 'Text in the description, merchant, or notes' -r
-complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from ls" -l limit -d 'Results per page (transactions: up to 100, notifications: up to 50)' -r
-complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from ls" -l after -d 'Cursor from a previous page' -r
+complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from ls" -l limit -d 'Maximum number of results; the CLI fetches as many pages as it needs' -r
+complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from ls" -l after -d 'Continue after the cursor that a previous list printed' -r
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from ls" -s s -l space -d 'Space to act on, by name or ID [default: the one set with `visor spaces use`]' -r
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from ls" -l api-url -d 'API base URL' -r
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from ls" -l auth-url -d 'Base URL of the browser login (OAuth authorization server)' -r
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from ls" -l csv -d 'Print CSV for a spreadsheet: one row per transaction, names instead of IDs'
-complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from ls" -l all -d 'Fetch every page'
+complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from ls" -l all -d 'Fetch every result, however many; each page counts toward the rate limit'
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from ls" -l json -d 'Print the API response body as JSON instead of a table'
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from ls" -l debug -d 'Print each HTTP request (method, URL, status, time, request ID) on standard error'
 complete -c visor -n "__fish_visor_using_subcommand transactions; and __fish_seen_subcommand_from ls" -s h -l help -d 'Print help (see more with \'--help\')'
@@ -281,13 +281,13 @@ credit\t'Money in'"
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from list" -l ignored -d 'Only ignored (true) or only counted (false) transactions' -r -f -a "true\t''
 false\t''"
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from list" -l search -d 'Text in the description, merchant, or notes' -r
-complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from list" -l limit -d 'Results per page (transactions: up to 100, notifications: up to 50)' -r
-complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from list" -l after -d 'Cursor from a previous page' -r
+complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from list" -l limit -d 'Maximum number of results; the CLI fetches as many pages as it needs' -r
+complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from list" -l after -d 'Continue after the cursor that a previous list printed' -r
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from list" -s s -l space -d 'Space to act on, by name or ID [default: the one set with `visor spaces use`]' -r
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from list" -l api-url -d 'API base URL' -r
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from list" -l auth-url -d 'Base URL of the browser login (OAuth authorization server)' -r
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from list" -l csv -d 'Print CSV for a spreadsheet: one row per transaction, names instead of IDs'
-complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from list" -l all -d 'Fetch every page'
+complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from list" -l all -d 'Fetch every result, however many; each page counts toward the rate limit'
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from list" -l json -d 'Print the API response body as JSON instead of a table'
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from list" -l debug -d 'Print each HTTP request (method, URL, status, time, request ID) on standard error'
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from list" -s h -l help -d 'Print help (see more with \'--help\')'
@@ -301,13 +301,13 @@ credit\t'Money in'"
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from ls" -l ignored -d 'Only ignored (true) or only counted (false) transactions' -r -f -a "true\t''
 false\t''"
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from ls" -l search -d 'Text in the description, merchant, or notes' -r
-complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from ls" -l limit -d 'Results per page (transactions: up to 100, notifications: up to 50)' -r
-complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from ls" -l after -d 'Cursor from a previous page' -r
+complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from ls" -l limit -d 'Maximum number of results; the CLI fetches as many pages as it needs' -r
+complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from ls" -l after -d 'Continue after the cursor that a previous list printed' -r
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from ls" -s s -l space -d 'Space to act on, by name or ID [default: the one set with `visor spaces use`]' -r
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from ls" -l api-url -d 'API base URL' -r
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from ls" -l auth-url -d 'Base URL of the browser login (OAuth authorization server)' -r
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from ls" -l csv -d 'Print CSV for a spreadsheet: one row per transaction, names instead of IDs'
-complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from ls" -l all -d 'Fetch every page'
+complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from ls" -l all -d 'Fetch every result, however many; each page counts toward the rate limit'
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from ls" -l json -d 'Print the API response body as JSON instead of a table'
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from ls" -l debug -d 'Print each HTTP request (method, URL, status, time, request ID) on standard error'
 complete -c visor -n "__fish_visor_using_subcommand tx; and __fish_seen_subcommand_from ls" -s h -l help -d 'Print help (see more with \'--help\')'
@@ -641,23 +641,23 @@ complete -c visor -n "__fish_visor_using_subcommand notifications; and not __fis
 complete -c visor -n "__fish_visor_using_subcommand notifications; and not __fish_seen_subcommand_from list ls help" -f -a "list" -d 'List them'
 complete -c visor -n "__fish_visor_using_subcommand notifications; and not __fish_seen_subcommand_from list ls help" -f -a "ls" -d 'List them'
 complete -c visor -n "__fish_visor_using_subcommand notifications; and not __fish_seen_subcommand_from list ls help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
-complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from list" -l limit -d 'Results per page (transactions: up to 100, notifications: up to 50)' -r
-complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from list" -l after -d 'Cursor from a previous page' -r
+complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from list" -l limit -d 'Maximum number of results; the CLI fetches as many pages as it needs' -r
+complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from list" -l after -d 'Continue after the cursor that a previous list printed' -r
 complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from list" -s s -l space -d 'Space to act on, by name or ID [default: the one set with `visor spaces use`]' -r
 complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from list" -l api-url -d 'API base URL' -r
 complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from list" -l auth-url -d 'Base URL of the browser login (OAuth authorization server)' -r
 complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from list" -l unread -d 'Only unread notifications'
-complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from list" -l all -d 'Fetch every page'
+complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from list" -l all -d 'Fetch every result, however many; each page counts toward the rate limit'
 complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from list" -l json -d 'Print the API response body as JSON instead of a table'
 complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from list" -l debug -d 'Print each HTTP request (method, URL, status, time, request ID) on standard error'
 complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from list" -s h -l help -d 'Print help'
-complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from ls" -l limit -d 'Results per page (transactions: up to 100, notifications: up to 50)' -r
-complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from ls" -l after -d 'Cursor from a previous page' -r
+complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from ls" -l limit -d 'Maximum number of results; the CLI fetches as many pages as it needs' -r
+complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from ls" -l after -d 'Continue after the cursor that a previous list printed' -r
 complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from ls" -s s -l space -d 'Space to act on, by name or ID [default: the one set with `visor spaces use`]' -r
 complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from ls" -l api-url -d 'API base URL' -r
 complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from ls" -l auth-url -d 'Base URL of the browser login (OAuth authorization server)' -r
 complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from ls" -l unread -d 'Only unread notifications'
-complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from ls" -l all -d 'Fetch every page'
+complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from ls" -l all -d 'Fetch every result, however many; each page counts toward the rate limit'
 complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from ls" -l json -d 'Print the API response body as JSON instead of a table'
 complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from ls" -l debug -d 'Print each HTTP request (method, URL, status, time, request ID) on standard error'
 complete -c visor -n "__fish_visor_using_subcommand notifications; and __fish_seen_subcommand_from ls" -s h -l help -d 'Print help'

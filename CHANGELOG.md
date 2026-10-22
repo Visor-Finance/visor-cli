@@ -5,6 +5,10 @@ people who use the CLI: what they can do now, what changed, what to watch for.
 
 ## Unreleased
 
+- **Changed:** `--limit` on `tx list` and `notifications list` is now the most results to return (default 50), not the page size. The CLI fetches as many pages as it needs, like `gh`'s `--limit`. Before, a list returned one page and `--all` was the only way past it.
+- `--all` and `--limit` cannot be combined. A list that spans pages shows a running count on the terminal.
+- A loader shows while the CLI waits for Visor, on a terminal only, after 150 ms so fast commands never flicker. A multi-page list shows its running count.
+- When the API rate limit is reached, the CLI waits the whole `retry-after` (up to a minute) and says so, instead of failing a long `--all` export after 30 s.
 - The CLI works on the Pro plan too, like the personal API. The `PLAN_REQUIRED` hint and the help now say Pro or Premium.
 - The man page in the release archives shows the right version (0.3.0 shipped it with 0.2.0 in its header).
 

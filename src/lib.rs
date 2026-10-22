@@ -3,6 +3,7 @@
 //! The binary in `main.rs` only parses arguments and maps errors to exit
 //! codes; everything else lives here so tests can reach it.
 
+pub mod activity;
 pub mod api;
 pub mod banner;
 pub mod browser;

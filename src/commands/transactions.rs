@@ -59,11 +59,11 @@ fn list(ctx: &Context, space: &str, args: &TransactionListArgs) -> Result<()> {
         .opt("tag_id", tag)
         .opt("type", args.kind.map(Direction::as_str))
         .opt("ignored", args.ignored)
-        .opt("search", args.search.as_deref())
-        .opt("limit", args.page.limit);
+        .opt("search", args.search.as_deref());
 
-    let body = paginate(&args.page, |after| {
+    let body = paginate(&args.page, 100, "transactions", |after, size| {
         let mut query = query.as_slice().to_vec();
+        query.push(("limit", size.to_string()));
         query.extend(after.map(|after| ("after", after.to_owned())));
         client.get_json(&format!("/v1/spaces/{space}/transactions"), &query)
     })?;
