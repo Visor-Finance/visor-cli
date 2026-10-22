@@ -5,6 +5,9 @@ people who use the CLI: what they can do now, what changed, what to watch for.
 
 ## Unreleased
 
+- The CLI works on the Pro plan too, like the personal API. The `PLAN_REQUIRED` hint and the help now say Pro or Premium.
+- The man page in the release archives shows the right version (0.3.0 shipped it with 0.2.0 in its header).
+
 ## 0.3.0 - 2026-10-21
 
 - `--json` errors are JSON too: `{"error": {"code", "message", "exit_code", ...}}` on standard error, with the HTTP status, details, and request ID for an API error.
