@@ -17,6 +17,7 @@ fn main() -> ExitCode {
     let code = match visor::commands::run(cli) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
+            visor::activity::stop();
             // With --json, the error is JSON too, on standard error, so a
             // script reads one format; like `resend --json`.
             if json {
@@ -30,6 +31,7 @@ fn main() -> ExitCode {
             error.exit_code()
         }
     };
+    visor::activity::stop();
     visor::update::finish(update);
     code
 }

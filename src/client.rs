@@ -24,7 +24,8 @@ pub struct RetryPolicy {
     pub max_retries: u32,
     /// The first backoff for a `5xx` or a network error; it doubles per attempt.
     pub base_delay: Duration,
-    /// A `429` with a longer `retry-after` fails instead of waiting.
+    /// A `429` with a longer `retry-after` fails instead of waiting. The
+    /// API counts in fixed one-minute windows, so a wait can reach 60 s.
     pub max_wait: Duration,
 }
 
@@ -33,7 +34,7 @@ impl Default for RetryPolicy {
         Self {
             max_retries: 3,
             base_delay: Duration::from_millis(500),
-            max_wait: Duration::from_secs(30),
+            max_wait: Duration::from_secs(65),
         }
     }
 }
@@ -192,7 +193,16 @@ impl Client {
                     };
 
                     match wait {
-                        Some(wait) if can_retry => thread::sleep(wait),
+                        Some(wait) if can_retry => {
+                            if status == StatusCode::TOO_MANY_REQUESTS {
+                                debug::note(&format!("rate limited; waiting {} s", wait.as_secs()));
+                                crate::activity::set(&format!(
+                                    "waiting {} s for the Visor rate limit (60 requests a minute)…",
+                                    wait.as_secs()
+                                ));
+                            }
+                            thread::sleep(wait);
+                        }
                         _ => return Err(api_error(response)),
                     }
                 }

@@ -11,6 +11,19 @@ Rust CLI for the Visor personal API (`https://api.visorfinance.app/v1`). The API
 - Exit codes in `error::exit` are a public contract; document any change in the README.
 - Tests never touch the real keychain or config: use `VISOR_CONFIG_DIR` + `VISOR_CREDENTIAL_STORE=file`.
 
+## CLI behavior checklist
+
+Every new or changed command meets these, the way `gh`, Resend, and Fly do. Check them before you call a command done, and compare with those CLIs when you design new UX.
+
+- **Bounded by default.** A list returns at most `--limit` results (default 50) and fetches pages itself; `--all` is the only way to fetch everything. Never fetch an unbounded collection by default.
+- **Never silent.** Any wait for Visor shows the loader (`activity::start` / `activity::set`); a multi-page fetch shows its running count; a rate-limit wait says how long. Prompts and output stop the loader first (`output::line` and `output::note` already do).
+- **Respect the rate limit.** The API allows 60 requests a minute per token in fixed one-minute windows. Send requests one at a time, never in parallel, and wait the full `retry-after` on `429` (`RetryPolicy`). Prefer one request with filters (`--from`, `--to`) over many.
+- **Terminal-aware.** Color, the banner, spinners, and prompts appear only on a terminal and never under `NO_COLOR`; a pipe gets data only, on stdout.
+- **Scriptable.** Every command with data supports `--json` (stable keys, no secrets), and errors follow `--json` too. A command never prompts without a terminal: it offers a flag instead (`--yes`, `--with-token`).
+- **Safe.** Destructive actions confirm unless `--yes`. Creates send an `Idempotency-Key`. Retries never repeat a request the API may have processed (no `5xx` retry for `DELETE`).
+- **Actionable errors.** An error says what to run next (`visor auth login`, `--limit`, a Settings URL) and maps to a documented exit code.
+- **Documented.** Every flag has a help line; non-obvious commands have examples in `after_help`; user-visible changes go under `## Unreleased` in `CHANGELOG.md`; regenerate `dist-assets/` (see below).
+
 ## Check
 
 ```bash

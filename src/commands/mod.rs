@@ -55,7 +55,10 @@ pub fn run(cli: Cli) -> Result<()> {
             let store = Store::from_env(&config_dir)?;
             return auth::status(&store, &Config::load(&config_dir)?, &cli.global, format);
         }
-        Command::Doctor => return doctor::run(&cli.global, format),
+        Command::Doctor => {
+            crate::activity::start("Running checks…");
+            return doctor::run(&cli.global, format);
+        }
         Command::Open { page, print } => {
             // Like `gh browse`: print the URL when asked or when no browser opens.
             if print || !crate::browser::open(page.url()) {
@@ -68,6 +71,7 @@ pub fn run(cli: Cli) -> Result<()> {
         command => command,
     };
 
+    crate::activity::start("Loading…");
     let ctx = Context::new(
         &cli.global.api_url,
         &cli.global.auth_url,
@@ -177,7 +181,6 @@ fn paginate(
 ) -> Result<Value> {
     let max = page.max();
     let size = |fetched: usize| max.map_or(max_page, |max| (max - fetched).min(max_page));
-    let mut progress = output::Progress::new(noun);
 
     let mut body = fetch(page.after.as_deref(), size(0))?;
     let mut fetched = body["data"].as_array().map_or(0, Vec::len);
@@ -185,7 +188,7 @@ fn paginate(
         if max.is_some_and(|max| fetched >= max) {
             break;
         }
-        progress.update(fetched);
+        crate::activity::set(&format!("{fetched} {noun} so far…"));
         let mut next = fetch(Some(&cursor), size(fetched))?;
         let rows = next["data"]
             .as_array_mut()
@@ -222,6 +225,7 @@ fn require_terminal(hint: &str) -> Result<()> {
 
 /// Asks a yes/no question on the terminal; call [`require_terminal`] first.
 fn confirm(question: &str) -> Result<bool> {
+    crate::activity::stop();
     eprint!("{question} [y/N] ");
     let mut answer = String::new();
     io::stdin()
