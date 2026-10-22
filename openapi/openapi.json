@@ -1666,7 +1666,7 @@
     }
   },
   "info": {
-    "description": "Personal REST API for Visor Premium users. Authenticate with a personal API token created in Visor Settings, sent as `Authorization: Bearer visor_pat_...`, or with an OAuth access token from the Visor CLI browser login.",
+    "description": "Personal REST API for Visor Pro and Premium users. Authenticate with a personal API token created in Visor Settings, sent as `Authorization: Bearer visor_pat_...`, or with an OAuth access token from the Visor CLI browser login.",
     "title": "Visor Personal API",
     "version": "1.0.0"
   },
@@ -1775,7 +1775,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -2035,7 +2035,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -2229,7 +2229,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -2488,7 +2488,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -2726,7 +2726,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -3025,7 +3025,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -3311,7 +3311,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -3550,7 +3550,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -3790,7 +3790,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -4075,7 +4075,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -4362,7 +4362,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -4607,7 +4607,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -4867,7 +4867,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -5107,7 +5107,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -5339,7 +5339,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -5719,7 +5719,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -6033,7 +6033,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -6327,7 +6327,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -6609,7 +6609,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -6906,7 +6906,7 @@
                 }
               }
             },
-            "description": "Premium plan required or insufficient scope",
+            "description": "Pro or Premium plan required, or insufficient scope",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
