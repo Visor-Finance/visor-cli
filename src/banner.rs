@@ -2,9 +2,9 @@
 //!
 //! Each character cell shows two icon pixels with the upper half block `▀`:
 //! the foreground paints the top pixel and the background the bottom one.
-//! The icon needs color, so without it the banner is the wordmark alone.
+//! The wordmark is pixels in the terminal's own text color; the icon needs
+//! color, so without it the banner is the wordmark alone.
 
-use std::fmt::Write as _;
 use std::io::IsTerminal;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -61,13 +61,20 @@ fn ansi256(Rgb(r, g, b): Rgb) -> u8 {
     16 + 36 * nearest(r) + 6 * nearest(g) + nearest(b)
 }
 
-/// The wordmark in thin lines, like the logo's lettering.
-const WORDMARK: [&str; 5] = [
-    "╲        ╱   │   ╭───────╴   ╭───────╮   ╭───────╴",
-    " ╲      ╱    │   │           │       │   │",
-    "  ╲    ╱     │   ╰───────╮   │       │   │",
-    "   ╲  ╱      │           │   │       │   │",
-    "    ╲╱       │   ╶───────╯   ╰───────╯   │",
+/// The wordmark as pixels: 2-pixel strokes, the logo's geometric letters.
+const WORDMARK: [&str; 12] = [
+    "##........##..##...######.....######.....##..####",
+    "##........##..##..########...########....##.#####",
+    "##........##..##.###....###.###....###...####....",
+    ".##......##...##.##.........##......##...###.....",
+    ".##......##...##.###........##......##...##......",
+    "..##....##....##..#######...##......##...##......",
+    "..##....##....##...#######..##......##...##......",
+    "...##..##.....##........###.##......##...##......",
+    "...##..##.....##.........##.##......##...##......",
+    "....####......##.###....###.###....###...##......",
+    "....####......##..########...########....##......",
+    ".....##.......##...######.....######.....##......",
 ];
 
 /// The Visor app icon, 17×17 pixels, sampled from `icon.svg`.
@@ -397,46 +404,80 @@ const ICON: [[Option<Rgb>; 17]; 17] = [
     ],
 ];
 
+/// One pixel of the banner.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Pixel {
+    Empty,
+    /// The terminal's own text color, so the wordmark suits light and dark themes.
+    Ink,
+    Color(Rgb),
+}
+
+/// Space between the icon and the wordmark, in pixels.
+const GAP: usize = 4;
+
+/// The banner as pixels: the icon (with color only), the gap, and the wordmark
+/// centered on the icon's height.
+fn canvas(with_icon: bool) -> Vec<Vec<Pixel>> {
+    let word: Vec<Vec<Pixel>> = WORDMARK
+        .iter()
+        .map(|line| {
+            line.chars()
+                .map(|c| if c == '#' { Pixel::Ink } else { Pixel::Empty })
+                .collect()
+        })
+        .collect();
+    if !with_icon {
+        return word;
+    }
+    let top = (ICON.len() - word.len()) / 2;
+    ICON.iter()
+        .enumerate()
+        .map(|(y, icon_row)| {
+            let mut row: Vec<Pixel> = icon_row
+                .iter()
+                .map(|c| c.map_or(Pixel::Empty, Pixel::Color))
+                .collect();
+            row.extend([Pixel::Empty; GAP]);
+            match y.checked_sub(top).and_then(|i| word.get(i)) {
+                Some(word_row) => row.extend(word_row),
+                None => row.extend(vec![Pixel::Empty; word[0].len()]),
+            }
+            row
+        })
+        .collect()
+}
+
 /// The banner for a terminal with `palette`, ending in a newline.
 #[must_use]
 pub fn render(palette: Palette) -> String {
+    let pixels = canvas(palette != Palette::None);
     let mut out = String::from("\n");
-    if palette == Palette::None {
-        for line in WORDMARK {
-            let _ = writeln!(out, "  {line}");
-        }
-        out.push('\n');
-        return out;
-    }
-
-    // The wordmark sits beside the middle of the icon's rows.
-    let icon_rows = ICON.len().div_ceil(2);
-    let first_word_row = (icon_rows - WORDMARK.len()) / 2;
-    for row in 0..icon_rows {
+    for pair in pixels.chunks(2) {
         out.push_str("  ");
-        for col in 0..ICON.len() {
-            let top = ICON[row * 2][col];
-            let bottom = ICON.get(row * 2 + 1).and_then(|line| line[col]);
-            match (top, bottom) {
-                (None, None) => out.push(' '),
-                (Some(top), None) => {
-                    let _ = write!(out, "{}▀\x1b[0m", palette.fg(top));
-                }
-                (None, Some(bottom)) => {
-                    let _ = write!(out, "{}▄\x1b[0m", palette.fg(bottom));
-                }
-                (Some(top), Some(bottom)) => {
-                    let _ = write!(out, "{}{}▀\x1b[0m", palette.fg(top), palette.bg(bottom));
-                }
-            }
+        for (col, &top) in pair[0].iter().enumerate() {
+            let bottom = pair.get(1).map_or(Pixel::Empty, |row| row[col]);
+            out.push_str(&cell(palette, top, bottom));
         }
-        if let Some(line) = row.checked_sub(first_word_row).and_then(|i| WORDMARK.get(i)) {
-            let _ = write!(out, "    \x1b[1m{line}\x1b[0m");
-        }
+        out.truncate(out.trim_end_matches(' ').len());
         out.push('\n');
     }
     out.push('\n');
     out
+}
+
+/// One character cell: two stacked pixels drawn with the half blocks.
+fn cell(palette: Palette, top: Pixel, bottom: Pixel) -> String {
+    use Pixel::{Color, Empty, Ink};
+    match (top, bottom) {
+        (Empty, Empty) => " ".to_owned(),
+        (Ink, Ink) => "█".to_owned(),
+        (Ink, Empty) => "▀".to_owned(),
+        (Empty, Ink) => "▄".to_owned(),
+        (Color(top), Color(bottom)) => format!("{}{}▀\x1b[0m", palette.fg(top), palette.bg(bottom)),
+        (Color(top), Empty | Ink) => format!("{}▀\x1b[0m", palette.fg(top)),
+        (Empty | Ink, Color(bottom)) => format!("{}▄\x1b[0m", palette.fg(bottom)),
+    }
 }
 
 /// Prints the banner on standard error when it is a terminal: the banner
@@ -470,8 +511,9 @@ mod tests {
         let banner = render(Palette::None);
 
         assert!(!banner.contains('\x1b'));
-        assert!(!banner.contains('▀'));
-        assert!(banner.contains("╭───────╮"));
+        // 12 pixel rows of wordmark make 6 text rows, between blank lines.
+        assert_eq!(banner.lines().count(), 8);
+        assert!(banner.contains('█'));
     }
 
     #[test]
@@ -481,12 +523,17 @@ mod tests {
 
         // 17 pixel rows make 9 text rows, between two blank lines.
         assert_eq!(lines.len(), 11);
-        assert!(lines.iter().any(|line| line.contains('▀') && line.contains("╲╱")));
+        assert!(lines.iter().any(|line| line.contains('▀') && line.contains('█')));
         assert!(banner.contains("\x1b[38;2;0;213;226m"), "the cyan band is drawn");
         assert!(
             lines.iter().all(|line| line.chars().count() <= 80),
             "fits 80 columns"
         );
+    }
+
+    #[test]
+    fn the_wordmark_rows_have_one_width() {
+        assert!(WORDMARK.iter().all(|line| line.len() == WORDMARK[0].len()));
     }
 
     #[test]
