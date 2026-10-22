@@ -1280,3 +1280,87 @@ fn pix_rejects_a_negative_amount_before_calling_the_api() {
         .code(2)
         .stderr(predicate::str::contains("a Pix amount is positive"));
 }
+
+#[test]
+fn pix_asks_for_the_bank_on_a_terminal_and_retries_with_the_same_key() {
+    let mut harness = Harness::new();
+    let missing_bank = harness
+        .server
+        .mock("POST", "/v1/pix-payments")
+        .match_header("idempotency-key", "pix-1")
+        .match_body(Matcher::Json(
+            json!({"pix_key": "maria@example.com", "amount": "20.00"}),
+        ))
+        .with_status(422)
+        .with_body(
+            json!({"errors": [{"code": "BANK_REQUIRED", "message": "Send the bank.",
+                               "details": {"banks": ["Itaú", "Nubank"]}}]})
+            .to_string(),
+        )
+        .create();
+    let started = harness
+        .server
+        .mock("POST", "/v1/pix-payments")
+        .match_header("idempotency-key", "pix-1")
+        .match_body(Matcher::Json(
+            json!({"pix_key": "maria@example.com", "amount": "20.00", "bank": "Nubank"}),
+        ))
+        .with_status(201)
+        .with_body(pix("pending").to_string())
+        .create();
+    harness.get(&format!("/v1/pix-payments/{PIX}"), &pix("completed"));
+
+    // 2 picks Nubank; Enter then confirms on this computer.
+    harness
+        .visor()
+        .args(["pix", "maria@example.com", "20", "--idempotency-key", "pix-1"])
+        .env("VISOR_FORCE_TTY", "1")
+        .write_stdin("2\n\n")
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("Which bank does the Pix come from?"))
+        .stderr(predicate::str::contains("1 Itaú"))
+        .stderr(predicate::str::contains("2 Nubank"))
+        .stderr(predicate::str::contains("Pix completed"));
+    missing_bank.assert();
+    started.assert();
+}
+
+#[test]
+fn pix_asks_whether_an_ambiguous_key_is_a_cpf_or_a_phone() {
+    let mut harness = Harness::new();
+    harness
+        .server
+        .mock("POST", "/v1/pix-payments")
+        .match_body(Matcher::Json(
+            json!({"pix_key": "11987654321", "amount": "20.00"}),
+        ))
+        .with_status(422)
+        .with_body(
+            json!({"errors": [{"code": "AMBIGUOUS_PIX_KEY", "message": "CPF or phone.", "details": {}}]})
+                .to_string(),
+        )
+        .create();
+    let started = harness
+        .server
+        .mock("POST", "/v1/pix-payments")
+        .match_body(Matcher::Json(
+            json!({"pix_key": "11987654321", "amount": "20.00", "key_type": "phone"}),
+        ))
+        .with_status(201)
+        .with_body(pix("pending").to_string())
+        .create();
+
+    harness
+        .visor()
+        .args(["pix", "11987654321", "20", "--no-wait"])
+        .env("VISOR_FORCE_TTY", "1")
+        .write_stdin("2\n")
+        .assert()
+        .success()
+        .stderr(predicate::str::contains(
+            "Is 11987654321 a CPF or a phone number?",
+        ))
+        .stdout(predicate::str::contains(START_URL));
+    started.assert();
+}

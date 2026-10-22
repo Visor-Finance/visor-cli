@@ -21,6 +21,7 @@ Every new or changed command meets these, the way `gh`, Resend, and Fly do. Chec
 - **Terminal-aware.** Color, the banner, spinners, and prompts appear only on a terminal and never under `NO_COLOR`; a pipe gets data only, on stdout.
 - **Scriptable.** Every command with data supports `--json` (stable keys, no secrets), and errors follow `--json` too. A command never prompts without a terminal: it offers a flag instead (`--yes`, `--with-token`).
 - **Safe.** Destructive actions confirm unless `--yes`. Creates send an `Idempotency-Key`. Retries never repeat a request the API may have processed (no `5xx` retry for `DELETE`).
+- **Choices, not dead ends.** When the API answers with the options it needs (such as `details.banks` on `BANK_REQUIRED`, or CPF or phone on `AMBIGUOUS_PIX_KEY`), a terminal run lists them, asks the user to pick one (`commands::choose`), and retries the same request, with the same `Idempotency-Key`. Without a terminal, or with `--json`, it never asks: the error lists the options and the flag that picks one (`--bank`, `--key-type`). Show the options the API returns; never make the user rerun the command just to type one.
 - **Actionable errors.** An error says what to run next (`visor auth login`, `--limit`, a Settings URL) and maps to a documented exit code.
 - **Documented.** Every flag has a help line; non-obvious commands have examples in `after_help`; user-visible changes go under `## Unreleased` in `CHANGELOG.md`; regenerate `dist-assets/` (see below).
 

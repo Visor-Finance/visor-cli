@@ -2,7 +2,6 @@
 //! computer or as a QR code for your phone), and follow it until it ends.
 
 use std::fmt::Write as _;
-use std::io;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -64,14 +63,23 @@ fn send(ctx: &mut Context, args: PixSendArgs) -> Result<()> {
         .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
 
     crate::activity::set("Starting the Pix…");
-    let reply = match ctx.client.create_pix_payment(&body, &idempotency_key) {
-        Err(error) if lacks_pix_scope(&error) && can_allow_pix(ctx) => {
-            allow_pix(ctx)?;
-            crate::activity::start("Starting the Pix…");
-            // The same key: the API never started the rejected request.
-            ctx.client.create_pix_payment(&body, &idempotency_key)?
+    let mut allowed_pix = false;
+    let reply = loop {
+        // Each retry sends the same key: the API started nothing for an error.
+        match ctx.client.create_pix_payment(&body, &idempotency_key) {
+            Ok(reply) => break reply,
+            Err(error) if !allowed_pix && lacks_pix_scope(&error) && can_allow_pix(ctx) => {
+                allowed_pix = true;
+                allow_pix(ctx)?;
+            }
+            Err(error) => match pick_missing(ctx, &error, &body)? {
+                Some((field, value)) => {
+                    body[field] = value.into();
+                }
+                None => return Err(error),
+            },
         }
-        reply => reply?,
+        crate::activity::start("Starting the Pix…");
     };
     let pix: PixPayment = api::data(reply.body.clone())?;
     if reply
@@ -134,36 +142,69 @@ fn summary(pix: &PixPayment) -> String {
 /// Asks where to confirm. The phone comes first while the bank is not
 /// linked yet: linking happens in the bank's app.
 fn ask_device(pix: &PixPayment) -> Result<Device> {
-    let default = if pix.bank.as_ref().is_some_and(|bank| bank.linked) {
-        Device::Computer
-    } else {
-        Device::Phone
-    };
-    let (first, second) = match default {
-        Device::Phone => ("On your phone (QR code)", "On this computer (opens the browser)"),
-        _ => ("On this computer (opens the browser)", "On your phone (QR code)"),
-    };
-    crate::activity::stop();
-    let paint = Paint::stderr();
-    eprintln!(
-        "\nWhere do you want to confirm the Pix?\n  {} {first}\n  {} {second}",
-        paint.bold("1"),
-        paint.bold("2")
-    );
-    loop {
-        eprint!("Choose [1]: ");
-        let mut answer = String::new();
-        let read = io::stdin()
-            .read_line(&mut answer)
-            .map_err(|error| Error::io("cannot read the answer", error))?;
-        match answer.trim() {
-            _ if read == 0 => return Ok(default),
-            "" | "1" => return Ok(default),
-            "2" if default == Device::Phone => return Ok(Device::Computer),
-            "2" => return Ok(Device::Phone),
-            _ => eprintln!("Type 1 or 2."),
-        }
+    let mut options = [
+        (Device::Phone, "On your phone (QR code)"),
+        (Device::Computer, "On this computer (opens the browser)"),
+    ];
+    if pix.bank.as_ref().is_some_and(|bank| bank.linked) {
+        options.reverse();
     }
+    let labels: Vec<String> = options.iter().map(|(_, label)| (*label).to_owned()).collect();
+    let picked = super::choose("Where do you want to confirm the Pix?", &labels)?;
+    Ok(options[picked].0)
+}
+
+/// When the API answers with the choices it needs (the banks, or whether a
+/// key is a CPF or a phone), asks the user to pick one on a terminal.
+/// Returns the body field to set, or `None` to fail with the error, which
+/// lists the choices and the flag that picks one.
+fn pick_missing(ctx: &Context, error: &Error, body: &Value) -> Result<Option<(&'static str, String)>> {
+    let Error::Api(api) = error else {
+        return Ok(None);
+    };
+    if ctx.json() || !output::interactive() {
+        return Ok(None);
+    }
+    let (field, question, options): (&str, String, Vec<(String, String)>) = match api.code.as_str() {
+        code @ ("BANK_REQUIRED" | "BANK_NOT_FOUND") => {
+            let banks: Vec<(String, String)> = api.details["banks"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(Value::as_str)
+                .map(|bank| (bank.to_owned(), bank.to_owned()))
+                .collect();
+            let question = if code == "BANK_NOT_FOUND" {
+                "Pix through Visor does not work from that bank. Which bank does the Pix come from?"
+            } else {
+                "Which bank does the Pix come from?"
+            };
+            ("bank", question.to_owned(), banks)
+        }
+        "AMBIGUOUS_PIX_KEY" => (
+            "key_type",
+            format!(
+                "Is {} a CPF or a phone number?",
+                body["pix_key"].as_str().unwrap_or("the key")
+            ),
+            vec![
+                ("CPF".to_owned(), "cpf".to_owned()),
+                ("Phone number".to_owned(), "phone".to_owned()),
+            ],
+        ),
+        _ => return Ok(None),
+    };
+    // A choice the API already refused would only ask again.
+    let options: Vec<(String, String)> = options
+        .into_iter()
+        .filter(|(_, value)| body[field].as_str() != Some(value))
+        .collect();
+    if options.is_empty() {
+        return Ok(None);
+    }
+    let labels: Vec<String> = options.iter().map(|(label, _)| label.clone()).collect();
+    let picked = super::choose(&question, &labels)?;
+    Ok(Some((field, options[picked].1.clone())))
 }
 
 fn show(device: Device, url: &str) {

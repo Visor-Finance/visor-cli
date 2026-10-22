@@ -241,6 +241,33 @@ fn require_terminal(hint: &str) -> Result<()> {
     }
 }
 
+/// Asks the user to pick one of `options` by number; Enter (or no input)
+/// picks the first. Call only when `output::interactive()` says someone can
+/// answer.
+fn choose(question: &str, options: &[String]) -> Result<usize> {
+    crate::activity::stop();
+    let paint = output::Paint::stderr();
+    eprintln!("\n{question}");
+    for (index, option) in options.iter().enumerate() {
+        eprintln!("  {} {option}", paint.bold(&(index + 1).to_string()));
+    }
+    loop {
+        eprint!("Choose [1]: ");
+        let mut answer = String::new();
+        let read = io::stdin()
+            .read_line(&mut answer)
+            .map_err(|error| Error::io("cannot read the answer", error))?;
+        let answer = answer.trim();
+        if read == 0 || answer.is_empty() {
+            return Ok(0);
+        }
+        match answer.parse::<usize>() {
+            Ok(number) if (1..=options.len()).contains(&number) => return Ok(number - 1),
+            _ => eprintln!("Type a number from 1 to {}.", options.len()),
+        }
+    }
+}
+
 /// Asks a yes/no question on the terminal; call [`require_terminal`] first.
 fn confirm(question: &str) -> Result<bool> {
     crate::activity::stop();

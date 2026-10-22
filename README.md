@@ -89,7 +89,7 @@ visor pix status 7b2d5e91-…                      # read a Pix you started
 
 Pix needs the Premium plan and the browser login. The first time, `visor pix` opens the browser so you can allow Pix, then swaps the stored login for the new one and ends the old one; nothing else changes. Without a terminal, or with `--json`, it never opens anything: it fails with exit code 3 and asks you to run `visor pix` in a terminal once. A personal API token or `VISOR_TOKEN` cannot start a Pix.
 
-Without `--bank`, Visor uses the one bank you already linked; with several, the error lists them. A key that can be a CPF or a phone needs `--key-type cpf` or `--key-type phone`.
+Without `--bank`, Visor uses the one bank you already linked. Otherwise, on a terminal, the CLI lists your banks (the ones linked for Pix first, then the ones connected through Open Finance) and asks which one; in a script, the error lists them for `--bank`. A key that can be a CPF or a phone works the same way: the CLI asks, or the error asks for `--key-type cpf` or `--key-type phone`.
 
 ## Scripting
 
