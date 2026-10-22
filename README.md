@@ -2,7 +2,7 @@
 
 The command-line interface for the [Visor personal API](https://docs.visorfinance.app): spaces, accounts, transactions, cards, goals, and more, from your terminal or your scripts.
 
-The personal API requires an active **Premium** plan.
+The personal API and the CLI work on the **Pro** and **Premium** plans.
 
 ## Install
 
@@ -106,7 +106,7 @@ visor tx list --debug
 | 0 | Success |
 | 1 | Other failure |
 | 2 | Invalid usage, such as a bad flag or an unknown category name |
-| 3 | Not logged in, invalid or expired token, missing scope, or no Premium plan |
+| 3 | Not logged in, invalid or expired token, missing scope, or no Pro or Premium plan |
 | 4 | Not found |
 | 5 | Request rejected: validation, conflict, or idempotency conflict |
 | 6 | Rate limited, network error, or Visor unavailable |

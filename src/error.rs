@@ -187,7 +187,7 @@ impl ApiError {
             "TOKEN_EXPIRED" | "TOKEN_REVOKED" => {
                 "Run `visor auth login` again. With VISOR_TOKEN, create a new token in Settings.".to_owned()
             }
-            "PLAN_REQUIRED" => "The personal API needs an active Premium plan.".to_owned(),
+            "PLAN_REQUIRED" => "The personal API needs an active Pro or Premium plan.".to_owned(),
             "INSUFFICIENT_SCOPE" => {
                 let scope = self.details["required_scope"].as_str().unwrap_or("another scope");
                 format!(
