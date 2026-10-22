@@ -1,78 +1,84 @@
 use std::io::{self, IsTerminal, Read};
 
+use super::status::Status;
 use super::{Context, client_for};
 use crate::api;
+use crate::banner;
 use crate::cli::{AuthCommand, Global};
 use crate::client::Client;
-use crate::credentials::{self, Credential, Store};
+use crate::config::Config;
+use crate::credentials::{self, Credential, Source, Store};
 use crate::error::{Error, Result, TOKENS_URL};
 use crate::models::Me;
 use crate::oauth;
-use crate::output::{self, Format};
+use crate::output::{self, Format, Paint};
 
-pub fn run(command: AuthCommand, store: &Store, global: &Global, format: Format) -> Result<()> {
+pub fn run(
+    command: AuthCommand,
+    store: &Store,
+    config: &Config,
+    global: &Global,
+    format: Format,
+) -> Result<()> {
     match command {
-        AuthCommand::Login { with_token: true, .. } => login_with_token(store, &global.api_url, format),
+        AuthCommand::Login { with_token: true, .. } => {
+            banner::print();
+            let credential = Credential::PersonalToken { token: read_token()? };
+            finish_login(store, config, &global.api_url, &credential, format)
+        }
         AuthCommand::Login { no_browser, .. } => {
-            login_in_browser(store, &global.api_url, &global.auth_url, !no_browser, format)
+            banner::print();
+            let credential = oauth::login(&global.auth_url, !no_browser)?;
+            finish_login(store, config, &global.api_url, &credential, format)
         }
         AuthCommand::Logout => logout(store),
-        AuthCommand::Status => status(store, global, format),
+        AuthCommand::Status => status(store, config, global, format),
     }
 }
 
-fn login_in_browser(
+/// Checks the credential with the API, then stores it, so a bad token
+/// never replaces a good login. Then shows the account, like `fly auth
+/// login` does, and what to try next.
+fn finish_login(
     store: &Store,
+    config: &Config,
     api_url: &str,
-    auth_url: &str,
-    open_browser: bool,
+    credential: &Credential,
     format: Format,
 ) -> Result<()> {
-    let credential = oauth::login(auth_url, open_browser)?;
-    finish_login(store, api_url, &credential, format)
-}
-
-fn login_with_token(store: &Store, api_url: &str, format: Format) -> Result<()> {
-    let token = read_token()?;
-    if !token.starts_with("visor_pat_") {
+    if let Credential::PersonalToken { token } = credential
+        && !token.starts_with("visor_pat_")
+    {
         return Err(Error::usage(
             "that is not a Visor personal API token; tokens start with `visor_pat_`",
         ));
     }
-    finish_login(store, api_url, &Credential::PersonalToken { token }, format)
-}
-
-/// Checks the credential with the API, then stores it, so a bad token
-/// never replaces a good login.
-fn finish_login(store: &Store, api_url: &str, credential: &Credential, format: Format) -> Result<()> {
-    let body = Client::new(api_url, credential.bearer())?.me()?;
-    let me: Me = api::data(body.clone())?;
+    let client = Client::new(api_url, credential.bearer())?;
+    let status = Status::fetch(&client, credential.clone(), Source::Store(store.clone()), config)?;
     store.save(credential)?;
 
     if format == Format::Json {
-        output::json(&body)?;
+        output::json(&status.to_json())?;
+    } else {
+        let paint = Paint::stderr();
+        output::note(&format!("\n{}", status.render(paint)));
+        output::note(&format!(
+            "{}\n  {}  balances, this period, and the projection\n  {}   recent transactions\n  \
+             {} choose the space commands act on\n  {}     check the CLI, the login, and the API\n",
+            paint.bold("Next steps"),
+            paint.bold("visor overview"),
+            paint.bold("visor tx list"),
+            paint.bold("visor spaces use"),
+            paint.bold("visor doctor"),
+        ));
     }
-    output::note(&format!(
-        "Logged in as {} ({}) with {}. Stored in {store}.",
-        me.email,
-        me.plan,
-        access(credential)
-    ));
     if std::env::var_os("VISOR_TOKEN").is_some() {
-        output::note("Note: VISOR_TOKEN is set and takes precedence over this login.");
+        output::note(&format!(
+            "{} VISOR_TOKEN is set, so the CLI keeps using it instead of this login. Unset it to use this login.",
+            Paint::stderr().warn()
+        ));
     }
     Ok(())
-}
-
-/// What the credential lets the CLI do, as Settings names it.
-fn access(credential: &Credential) -> String {
-    match credential {
-        Credential::PersonalToken { .. } => "a personal API token".to_owned(),
-        Credential::OAuth { scope, .. } if scope.split(' ').any(|s| s == "pfm:transactions:write") => {
-            "read and record transactions access".to_owned()
-        }
-        Credential::OAuth { .. } => "read-only access".to_owned(),
-    }
 }
 
 fn read_token() -> Result<String> {
@@ -118,28 +124,16 @@ fn logout(store: &Store) -> Result<()> {
     Ok(())
 }
 
-fn status(store: &Store, global: &Global, format: Format) -> Result<()> {
+/// `visor auth status` and `visor whoami`.
+pub fn status(store: &Store, config: &Config, global: &Global, format: Format) -> Result<()> {
     let (credential, source) = credentials::resolve(store)?.ok_or(Error::NotLoggedIn)?;
-    let (method, access) = match &credential {
-        Credential::OAuth { .. } => ("browser login (Visor CLI)".to_owned(), access(&credential)),
-        Credential::PersonalToken { token } => (
-            format!("personal API token {}", credentials::redact(token)),
-            "as set on the token in Settings".to_owned(),
-        ),
-    };
-    let body = client_for(&global.api_url, &global.auth_url, credential, &source)?.me()?;
+    let client = client_for(&global.api_url, &global.auth_url, credential.clone(), &source)?;
+    let status = Status::fetch(&client, credential, source, config)?;
 
-    if format == Format::Json {
-        return output::json(&body);
+    match format {
+        Format::Json => output::json(&status.to_json()),
+        Format::Table => output::line(status.render(Paint::stdout()).trim_end()),
     }
-    let me: Me = api::data(body)?;
-    output::print_fields(&[
-        ("Logged in as", format!("{} <{}>", me.name, me.email)),
-        ("Plan", me.plan),
-        ("Login", method),
-        ("Access", access),
-        ("From", source.to_string()),
-    ])
 }
 
 pub fn me(ctx: &Context) -> Result<()> {

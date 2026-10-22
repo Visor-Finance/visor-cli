@@ -33,7 +33,8 @@ The CLI opens Visor in your browser. Log in, choose **Read only** or **Read and 
 ```bash
 visor auth login --no-browser            # print the login page URL instead of opening it
 visor auth login --with-token < token    # a personal API token, for machines without a browser
-visor auth status                        # who you are and how you are logged in
+visor auth status                        # who you are and how you are logged in (also: visor whoami)
+visor doctor                             # check the CLI version, the login, the API, and the space
 visor auth logout                        # removes the stored login
 ```
 

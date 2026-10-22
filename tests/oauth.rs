@@ -49,6 +49,14 @@ impl Harness {
 
     fn me(&mut self, bearer: &str) -> mockito::Mock {
         self.server
+            .mock("GET", "/v1/spaces")
+            .with_body(
+                json!({"data": [{"id": "11111111-1111-4111-8111-111111111111", "name": "Pessoal",
+                                 "type": "personal", "default": true, "role": "owner"}]})
+                .to_string(),
+            )
+            .create();
+        self.server
             .mock("GET", "/v1/me")
             .match_header("authorization", format!("Bearer {bearer}").as_str())
             .with_body(me().to_string())
@@ -170,7 +178,7 @@ fn browser_login_exchanges_the_code_and_stores_both_tokens() {
     std::io::Read::read_to_string(&mut stderr, &mut rest).unwrap();
     assert!(status.success(), "{rest}");
     assert!(
-        rest.contains("Logged in as ana@example.com (premium) with read-only access"),
+        rest.contains("Logged in to Visor as Ana (ana@example.com)") && rest.contains("Access     read only"),
         "{rest}"
     );
     token.assert();
@@ -323,8 +331,12 @@ fn status_describes_a_browser_login() {
     let stdout = String::from_utf8_lossy(&output.stdout);
 
     assert!(output.status.success());
-    assert!(stdout.contains("browser login (Visor CLI)"), "{stdout}");
-    assert!(stdout.contains("read and record transactions access"), "{stdout}");
+    assert!(stdout.contains("browser (Visor CLI), renews itself"), "{stdout}");
+    assert!(
+        stdout.contains("Access     read and record transactions"),
+        "{stdout}"
+    );
+    assert!(stdout.contains("Space      Pessoal · 1 space"), "{stdout}");
     assert!(!stdout.contains("a1"), "{stdout}");
 }
 

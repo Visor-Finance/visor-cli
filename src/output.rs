@@ -3,7 +3,7 @@
 //! Data goes to stdout; notes such as "No accounts found" go to stderr, so a
 //! pipe only ever sees data.
 
-use std::io::{self, Write};
+use std::io::{self, IsTerminal, Write};
 
 use chrono::{DateTime, Local};
 use comfy_table::{ContentArrangement, Table, presets};
@@ -34,6 +34,122 @@ pub fn line(text: &str) -> Result<()> {
 
 pub fn note(text: &str) {
     eprintln!("{text}");
+}
+
+/// ANSI styling for one stream, off for a pipe or under `NO_COLOR`.
+#[derive(Debug, Clone, Copy)]
+pub struct Paint {
+    on: bool,
+}
+
+impl Paint {
+    #[must_use]
+    pub fn stdout() -> Self {
+        Self::when(io::stdout().is_terminal())
+    }
+
+    #[must_use]
+    pub fn stderr() -> Self {
+        Self::when(io::stderr().is_terminal())
+    }
+
+    fn when(is_terminal: bool) -> Self {
+        Self {
+            on: crate::banner::Palette::detect(is_terminal) != crate::banner::Palette::None,
+        }
+    }
+
+    fn wrap(self, code: &str, text: &str) -> String {
+        if self.on {
+            format!("\x1b[{code}m{text}\x1b[0m")
+        } else {
+            text.to_owned()
+        }
+    }
+
+    #[must_use]
+    pub fn bold(self, text: &str) -> String {
+        self.wrap("1", text)
+    }
+
+    #[must_use]
+    pub fn dim(self, text: &str) -> String {
+        self.wrap("2", text)
+    }
+
+    #[must_use]
+    pub fn ok(self) -> String {
+        self.wrap("32", "✓")
+    }
+
+    #[must_use]
+    pub fn fail(self) -> String {
+        self.wrap("31", "✗")
+    }
+
+    #[must_use]
+    pub fn warn(self) -> String {
+        self.wrap("33", "!")
+    }
+}
+
+/// A one-line spinner on standard error. Without a terminal it prints the
+/// message once, so logs still say what the CLI waits for.
+#[derive(Debug)]
+pub struct Spinner {
+    message: String,
+    frame: usize,
+    live: bool,
+}
+
+impl Spinner {
+    const FRAMES: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+
+    #[must_use]
+    pub fn start(message: &str) -> Self {
+        let live = io::stderr().is_terminal();
+        let mut spinner = Self {
+            message: message.to_owned(),
+            frame: 0,
+            live,
+        };
+        if live {
+            spinner.tick();
+        } else {
+            note(message);
+        }
+        spinner
+    }
+
+    pub fn tick(&mut self) {
+        if self.live {
+            eprint!(
+                "\r\x1b[K{} {}",
+                Self::FRAMES[self.frame % Self::FRAMES.len()],
+                self.message
+            );
+            self.frame += 1;
+        }
+    }
+
+    /// Replaces the spinner with `✓ done`.
+    pub fn finish(mut self, done: &str) {
+        self.clear();
+        note(&format!("{} {done}", Paint::stderr().ok()));
+    }
+
+    fn clear(&mut self) {
+        if self.live {
+            eprint!("\r\x1b[K");
+            self.live = false;
+        }
+    }
+}
+
+impl Drop for Spinner {
+    fn drop(&mut self) {
+        self.clear();
+    }
 }
 
 #[must_use]

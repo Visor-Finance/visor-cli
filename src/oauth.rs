@@ -76,13 +76,18 @@ pub fn login(auth_url: &str, open_browser: bool) -> Result<Credential> {
     let state = random_token(16)?;
     let url = authorize_url(auth_url, &redirect_uri, &pkce.challenge, &state)?;
 
-    output::note(&format!("Open this page to log in to Visor:\n\n  {url}\n"));
-    if open_browser && !open_in_browser(url.as_str()) {
-        output::note("Could not open a browser; open the page above yourself.");
+    // Like `fly auth login`: say what opens, and give the URL a line of its
+    // own so it can be copied to a browser elsewhere on this machine.
+    if open_browser && open_in_browser(url.as_str()) {
+        output::note("Opening the Visor login page in your browser:\n");
+    } else {
+        output::note("Open this page in a browser on this machine and approve the login:\n");
     }
-    output::note("Waiting for you to approve the login in the browser…");
+    output::note(&format!("    {url}\n"));
 
-    let code = wait_for_code(&listener, &state, LOGIN_TIMEOUT)?;
+    let mut spinner = output::Spinner::start("Waiting for you to approve the login in the browser…");
+    let code = wait_for_code(&listener, &state, LOGIN_TIMEOUT, &mut || spinner.tick())?;
+    spinner.finish("Login approved in the browser");
     let tokens = exchange(
         auth_url,
         &[
@@ -143,13 +148,23 @@ enum Callback {
 
 /// Accepts browser requests until one brings the code, an error, or the
 /// timeout passes.
-fn wait_for_code(listener: &TcpListener, state: &str, timeout: Duration) -> Result<String> {
+fn wait_for_code(
+    listener: &TcpListener,
+    state: &str,
+    timeout: Duration,
+    on_tick: &mut dyn FnMut(),
+) -> Result<String> {
     listener
         .set_nonblocking(true)
         .map_err(|error| Error::io("cannot wait for the browser callback", error))?;
     let deadline = Instant::now() + timeout;
+    let mut next_tick = Instant::now();
 
     while Instant::now() < deadline {
+        if Instant::now() >= next_tick {
+            on_tick();
+            next_tick += Duration::from_millis(80);
+        }
         match listener.accept() {
             Ok((stream, _)) => match handle_callback(stream, state)? {
                 Callback::Code(code) => return Ok(code),
@@ -162,9 +177,10 @@ fn wait_for_code(listener: &TcpListener, state: &str, timeout: Duration) -> Resu
             Err(error) => return Err(Error::io("cannot accept the browser callback", error)),
         }
     }
-    Err(Error::Login(
-        "the login timed out. Run `visor auth login` again".to_owned(),
-    ))
+    Err(Error::Login(format!(
+        "nobody approved the login within {} minutes. Run `visor auth login` again",
+        timeout.as_secs() / 60
+    )))
 }
 
 fn handle_callback(mut stream: TcpStream, state: &str) -> Result<Callback> {
@@ -180,22 +196,20 @@ fn handle_callback(mut stream: TcpStream, state: &str) -> Result<Callback> {
     let _ = BufReader::new(&stream).take(8192).read_line(&mut request_line);
     let callback = parse_callback(&request_line, state);
 
-    let (status, message) = match &callback {
+    let (status, title, message) = match &callback {
         Ok(Callback::Code(_)) => (
             "200 OK",
-            "You are logged in. You can close this tab and go back to the terminal.",
+            "You are logged in",
+            "You can close this tab and go back to the terminal.",
         ),
         Ok(Callback::Denied(_)) | Err(_) => (
             "400 Bad Request",
-            "The login did not finish. Go back to the terminal for details.",
+            "The login did not finish",
+            "Go back to the terminal to see why.",
         ),
-        Ok(Callback::Other) => ("404 Not Found", "Not found."),
+        Ok(Callback::Other) => ("404 Not Found", "Not found", ""),
     };
-    let page = format!(
-        "<!doctype html><meta charset=\"utf-8\"><title>Visor CLI</title>\
-         <body style=\"font-family:system-ui;margin:4rem auto;max-width:32rem\">\
-         <h1>Visor CLI</h1><p>{message}</p></body>"
-    );
+    let page = callback_page(title, message);
     // The browser may close the connection first; the result is known already.
     let _ = write!(
         stream,
@@ -203,6 +217,25 @@ fn handle_callback(mut stream: TcpStream, state: &str) -> Result<Callback> {
         page.len()
     );
     callback
+}
+
+/// The page the browser shows after the redirect, in the Visor colors.
+fn callback_page(title: &str, message: &str) -> String {
+    const ICON: &str = include_str!("../assets/icon.svg");
+    format!(
+        "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\">\
+         <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\
+         <title>Visor CLI - {title}</title><style>\
+         :root{{color-scheme:light dark;--bg:#f5f8ff;--card:#fff;--text:#0b1220;--muted:#5b6475}}\
+         @media (prefers-color-scheme:dark){{:root{{--bg:#0b1220;--card:#121a2b;--text:#f5f8ff;--muted:#9aa4b8}}}}\
+         html,body{{margin:0;height:100%;background:var(--bg);color:var(--text);\
+         font-family:system-ui,-apple-system,sans-serif}}\
+         main{{min-height:100%;display:grid;place-items:center;padding:16px;box-sizing:border-box}}\
+         .card{{background:var(--card);border-radius:24px;padding:40px 32px;max-width:28rem;text-align:center;\
+         box-shadow:0 12px 40px rgba(1,71,227,.12)}}\
+         svg{{width:72px;height:72px}}h1{{font-size:1.4rem;margin:20px 0 8px}}p{{color:var(--muted);margin:0}}\
+         </style><main><div class=\"card\">{ICON}<h1>{title}</h1><p>{message}</p></div></main></html>"
+    )
 }
 
 /// Reads the request line, such as `GET /callback?code=…&state=… HTTP/1.1`.
@@ -484,7 +517,7 @@ mod tests {
             (get("/favicon.ico"), get("/callback?code=xyz&state=s1"))
         });
 
-        let code = wait_for_code(&listener, "s1", Duration::from_secs(10)).unwrap();
+        let code = wait_for_code(&listener, "s1", Duration::from_secs(10), &mut || {}).unwrap();
         let (favicon, callback) = browser.join().unwrap();
 
         assert_eq!(code, "xyz");
@@ -496,9 +529,9 @@ mod tests {
     fn times_out_without_a_callback() {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
 
-        let error = wait_for_code(&listener, "s1", Duration::from_millis(100)).unwrap_err();
+        let error = wait_for_code(&listener, "s1", Duration::from_millis(100), &mut || {}).unwrap_err();
 
-        assert!(error.to_string().contains("timed out"), "{error}");
+        assert!(error.to_string().contains("nobody approved the login"), "{error}");
     }
 
     fn oauth(access: &str, refresh: &str, expires_at: i64) -> Credential {

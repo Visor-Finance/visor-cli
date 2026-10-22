@@ -35,6 +35,9 @@ pub enum Error {
     #[error("login failed: {0}")]
     Login(String),
 
+    #[error("{0} check(s) failed")]
+    ChecksFailed(usize),
+
     #[error("{0}")]
     Usage(String),
 
@@ -77,7 +80,7 @@ impl Error {
             Self::Network(_) => exit::UNAVAILABLE,
             Self::NotLoggedIn | Self::LoginExpired | Self::Login(_) => exit::AUTH,
             Self::Usage(_) => exit::USAGE,
-            Self::Credentials(_) | Self::Io { .. } | Self::Decode(_) => exit::FAILURE,
+            Self::Credentials(_) | Self::Io { .. } | Self::Decode(_) | Self::ChecksFailed(_) => exit::FAILURE,
         }
     }
 

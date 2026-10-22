@@ -147,6 +147,7 @@ fn commands_fail_with_exit_code_3_when_not_logged_in() {
 fn login_checks_the_token_then_stores_it() {
     let mut harness = Harness::new();
     let me_mock = harness.get("/v1/me", &me());
+    harness.spaces();
 
     harness
         .visor()
@@ -155,7 +156,10 @@ fn login_checks_the_token_then_stores_it() {
         .write_stdin(format!("{TOKEN}\n"))
         .assert()
         .success()
-        .stderr(predicate::str::contains("Logged in as ana@example.com (premium)"));
+        .stderr(predicate::str::contains(
+            "Logged in to Visor as Ana (ana@example.com)",
+        ))
+        .stderr(predicate::str::contains("Next steps"));
     me_mock.assert();
 
     let stored: Value = serde_json::from_str(
@@ -683,4 +687,142 @@ fn rate_limit_is_retried_after_retry_after() {
         .success()
         .stdout(predicate::str::contains("ana@example.com"));
     limited.assert();
+}
+
+#[test]
+fn no_command_prints_the_help_without_a_banner_in_a_pipe() {
+    Harness::new()
+        .visor()
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Usage: visor"))
+        .stderr(predicate::str::contains("▀").not());
+}
+
+#[test]
+fn whoami_and_auth_status_summarize_the_login() {
+    let mut harness = Harness::new();
+    harness.get("/v1/me", &me());
+    harness.spaces();
+
+    for args in [vec!["whoami"], vec!["auth", "status"]] {
+        harness
+            .visor()
+            .args(&args)
+            .assert()
+            .success()
+            .stdout(predicate::str::contains(
+                "Logged in to Visor as Ana (ana@example.com)",
+            ))
+            .stdout(predicate::str::contains(
+                "personal API token visor_pat_abcd2345_…",
+            ))
+            .stdout(predicate::str::contains("VISOR_TOKEN (environment)"))
+            .stdout(predicate::str::contains("Space      Pessoal · 2 spaces"))
+            .stdout(predicate::str::contains("secret").not());
+    }
+}
+
+#[test]
+fn auth_status_json_has_stable_keys_and_no_secret() {
+    let mut harness = Harness::new();
+    harness.get("/v1/me", &me());
+    harness.spaces();
+
+    let output = harness
+        .visor()
+        .args(["auth", "status", "--json"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let status: Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(status["authenticated"], true);
+    assert_eq!(status["user"]["email"], "ana@example.com");
+    assert_eq!(
+        status["login"],
+        json!({"kind": "personal_token", "token": "visor_pat_abcd2345_…"})
+    );
+    assert_eq!(status["credential_source"], "env");
+    assert_eq!(status["space"]["id"], SPACE);
+    assert_eq!(status["spaces"], 2);
+    assert!(!String::from_utf8_lossy(&output).contains("secret"));
+}
+
+#[test]
+fn doctor_passes_and_reports_an_available_update() {
+    let mut harness = Harness::new();
+    harness.get("/v1/me", &me());
+    harness.spaces();
+    harness
+        .server
+        .mock("GET", "/releases/latest")
+        .with_body(r#"{"tag_name":"v99.0.0"}"#)
+        .create();
+
+    harness
+        .visor()
+        .arg("doctor")
+        .env(
+            "VISOR_RELEASES_URL",
+            format!("{}/releases/latest", harness.server.url()),
+        )
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("99.0.0 is out"))
+        .stdout(predicate::str::contains("✓ Login"))
+        .stdout(predicate::str::contains(
+            "✓ Visor API    ana@example.com · premium plan",
+        ))
+        .stdout(predicate::str::contains(
+            "✓ Space        Pessoal (your default space)",
+        ));
+}
+
+#[test]
+fn doctor_fails_when_not_logged_in() {
+    let harness = Harness::new();
+
+    let output = harness
+        .visor()
+        .args(["doctor", "--json"])
+        .env_remove("VISOR_TOKEN")
+        .env("VISOR_RELEASES_URL", "http://127.0.0.1:9/unreachable")
+        .assert()
+        .code(1)
+        .get_output()
+        .stdout
+        .clone();
+
+    let report: Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(report["ok"], false);
+    let checks = report["checks"].as_array().unwrap();
+    assert_eq!(checks[0]["name"], "CLI version");
+    assert_eq!(checks[0]["status"], "warn");
+    assert_eq!(checks[1]["name"], "Login");
+    assert_eq!(checks[1]["status"], "fail");
+}
+
+#[test]
+fn doctor_fails_when_the_api_rejects_the_token() {
+    let mut harness = Harness::new();
+    harness
+        .server
+        .mock("GET", "/v1/me")
+        .with_status(401)
+        .with_body(r#"{"errors":[{"code":"TOKEN_REVOKED","message":"The token was revoked."}]}"#)
+        .create();
+
+    harness
+        .visor()
+        .arg("doctor")
+        .env("VISOR_RELEASES_URL", "http://127.0.0.1:9/unreachable")
+        .assert()
+        .code(1)
+        .stdout(predicate::str::contains(
+            "✗ Visor API    The token was revoked. (TOKEN_REVOKED)",
+        ))
+        .stderr(predicate::str::contains("1 check(s) failed"));
 }

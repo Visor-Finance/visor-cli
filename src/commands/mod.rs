@@ -2,7 +2,9 @@
 //! or a table otherwise.
 
 mod auth;
+mod doctor;
 mod resources;
+pub(crate) mod status;
 mod transactions;
 
 use std::io::{self, IsTerminal};
@@ -28,7 +30,14 @@ pub fn run(cli: Cli) -> Result<()> {
         Format::Table
     };
 
-    let command = match cli.command {
+    let Some(command) = cli.command else {
+        // Like `resend` with no command: the banner, then the help.
+        crate::banner::print();
+        return Cli::command()
+            .print_help()
+            .map_err(|error| Error::io("cannot print the help", error));
+    };
+    let command = match command {
         Command::Completions { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "visor", &mut io::stdout());
             return Ok(());
@@ -36,8 +45,14 @@ pub fn run(cli: Cli) -> Result<()> {
         Command::Auth(command) => {
             let config_dir = config::config_dir()?;
             let store = Store::from_env(&config_dir)?;
-            return auth::run(command, &store, &cli.global, format);
+            return auth::run(command, &store, &Config::load(&config_dir)?, &cli.global, format);
         }
+        Command::Whoami => {
+            let config_dir = config::config_dir()?;
+            let store = Store::from_env(&config_dir)?;
+            return auth::status(&store, &Config::load(&config_dir)?, &cli.global, format);
+        }
+        Command::Doctor => return doctor::run(&cli.global, format),
         command => command,
     };
 
@@ -63,7 +78,9 @@ pub fn run(cli: Cli) -> Result<()> {
         Command::Connections(command) => resources::connections(&ctx, command),
         Command::Overview => resources::overview(&ctx),
         Command::Notifications(command) => resources::notifications(&ctx, command),
-        Command::Auth(_) | Command::Completions { .. } => unreachable!("handled above"),
+        Command::Auth(_) | Command::Whoami | Command::Doctor | Command::Completions { .. } => {
+            unreachable!("handled above")
+        }
     }
 }
 

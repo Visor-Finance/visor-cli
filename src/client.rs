@@ -194,10 +194,15 @@ impl Client {
 
 /// The HTTP client every request uses, API or OAuth.
 pub fn http() -> Result<Http> {
+    http_with_timeout(Duration::from_secs(60))
+}
+
+/// An HTTP client that gives up after `timeout`, for optional checks.
+pub fn http_with_timeout(timeout: Duration) -> Result<Http> {
     Http::builder()
         .user_agent(USER_AGENT)
-        .connect_timeout(Duration::from_secs(10))
-        .timeout(Duration::from_secs(60))
+        .connect_timeout(Duration::from_secs(10).min(timeout))
+        .timeout(timeout)
         .build()
         .map_err(Error::Network)
 }

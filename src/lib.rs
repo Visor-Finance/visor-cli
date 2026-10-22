@@ -4,6 +4,7 @@
 //! codes; everything else lives here so tests can reach it.
 
 pub mod api;
+pub mod banner;
 pub mod cli;
 pub mod client;
 pub mod commands;

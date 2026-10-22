@@ -26,8 +26,9 @@ pub struct Cli {
     #[command(flatten)]
     pub global: Global,
 
+    /// Without a command, the CLI shows the banner and this help
     #[command(subcommand)]
-    pub command: Command,
+    pub command: Option<Command>,
 }
 
 #[derive(Debug, Args)]
@@ -54,6 +55,12 @@ pub enum Command {
     /// Log in, log out, and check the stored login
     #[command(subcommand)]
     Auth(AuthCommand),
+
+    /// Show who is logged in, how, and the space commands act on
+    Whoami,
+
+    /// Check the CLI version, the login, and the connection to Visor
+    Doctor,
 
     /// Show the user the token belongs to
     Me,
