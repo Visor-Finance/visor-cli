@@ -51,7 +51,9 @@ locations. While the version is `0.x`:
 
 ## 4. Update the version and changelog
 
-1. Set `version` in `Cargo.toml`, then run `cargo check` so `Cargo.lock` follows.
+1. Set `version` in `Cargo.toml`, then run `cargo check` so `Cargo.lock` follows,
+   and `VISOR_UPDATE_GENERATED=1 cargo test --test generated`: the man page in
+   `dist-assets/` carries the version, and dist packs it into every archive.
 2. In `CHANGELOG.md`, rename `## Unreleased` to `## <version> - <YYYY-MM-DD>`
    and add a new empty `## Unreleased` above it. dist publishes that section as
    the release notes, so write bullets for users, not commit subjects.
@@ -60,12 +62,13 @@ locations. While the version is `0.x`:
 
 ## 5. Verify, commit, tag
 
+Run it as one `&&` chain, so a failing check stops before the tag. A tag
+cannot be taken back, so never join these steps with `;`.
+
 ```bash
-cargo fmt --check && cargo clippy --all-targets --locked -- -D warnings && cargo test --locked
-git commit -am "Release <version>"
-git push
-git tag -a v<version> -m "visor <version>"
-git push origin v<version>
+cargo fmt --check && cargo clippy --all-targets --locked -- -D warnings && cargo test --locked \
+  && git commit -am "Release <version>" && git push \
+  && git tag -a v<version> -m "visor <version>" && git push origin v<version>
 ```
 
 ## 6. Watch the release
