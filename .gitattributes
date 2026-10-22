@@ -1,0 +1,3 @@
+# Generated files are compared byte for byte by tests/generated.rs, so keep
+# them LF on every checkout, Windows included (core.autocrlf would add CR).
+dist-assets/** text eol=lf
