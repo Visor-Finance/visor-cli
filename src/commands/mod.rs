@@ -2,11 +2,14 @@
 //! or a table otherwise.
 
 mod auth;
+mod doctor;
 mod resources;
+pub(crate) mod status;
 mod transactions;
 
 use std::io::{self, IsTerminal};
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use clap::CommandFactory;
 use serde_json::Value;
@@ -14,8 +17,9 @@ use serde_json::Value;
 use crate::cli::{Cli, Command, PageArgs};
 use crate::client::Client;
 use crate::config::{self, Config};
-use crate::credentials::{self, Store};
+use crate::credentials::{self, Credential, Source, Store};
 use crate::error::{Error, Result};
+use crate::oauth::Session;
 use crate::output::{self, Format};
 use crate::{input, resolve};
 
@@ -26,7 +30,14 @@ pub fn run(cli: Cli) -> Result<()> {
         Format::Table
     };
 
-    let command = match cli.command {
+    let Some(command) = cli.command else {
+        // Like `resend` with no command: the banner, then the help.
+        crate::banner::print();
+        return Cli::command()
+            .print_help()
+            .map_err(|error| Error::io("cannot print the help", error));
+    };
+    let command = match command {
         Command::Completions { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "visor", &mut io::stdout());
             return Ok(());
@@ -34,12 +45,23 @@ pub fn run(cli: Cli) -> Result<()> {
         Command::Auth(command) => {
             let config_dir = config::config_dir()?;
             let store = Store::from_env(&config_dir)?;
-            return auth::run(command, &store, &cli.global.api_url, format);
+            return auth::run(command, &store, &Config::load(&config_dir)?, &cli.global, format);
         }
+        Command::Whoami => {
+            let config_dir = config::config_dir()?;
+            let store = Store::from_env(&config_dir)?;
+            return auth::status(&store, &Config::load(&config_dir)?, &cli.global, format);
+        }
+        Command::Doctor => return doctor::run(&cli.global, format),
         command => command,
     };
 
-    let ctx = Context::new(&cli.global.api_url, cli.global.space, format)?;
+    let ctx = Context::new(
+        &cli.global.api_url,
+        &cli.global.auth_url,
+        cli.global.space,
+        format,
+    )?;
     match command {
         Command::Me => auth::me(&ctx),
         Command::Spaces(command) => resources::spaces(&ctx, command),
@@ -56,7 +78,9 @@ pub fn run(cli: Cli) -> Result<()> {
         Command::Connections(command) => resources::connections(&ctx, command),
         Command::Overview => resources::overview(&ctx),
         Command::Notifications(command) => resources::notifications(&ctx, command),
-        Command::Auth(_) | Command::Completions { .. } => unreachable!("handled above"),
+        Command::Auth(_) | Command::Whoami | Command::Doctor | Command::Completions { .. } => {
+            unreachable!("handled above")
+        }
     }
 }
 
@@ -70,14 +94,14 @@ pub struct Context {
 }
 
 impl Context {
-    fn new(api_url: &str, space: Option<String>, format: Format) -> Result<Self> {
+    fn new(api_url: &str, auth_url: &str, space: Option<String>, format: Format) -> Result<Self> {
         let config_dir = config::config_dir()?;
         let config = Config::load(&config_dir)?;
         let store = Store::from_env(&config_dir)?;
-        let (credential, _) = credentials::resolve(&store)?.ok_or(Error::NotLoggedIn)?;
+        let (credential, source) = credentials::resolve(&store)?.ok_or(Error::NotLoggedIn)?;
 
         Ok(Self {
-            client: Client::new(api_url, credential.bearer())?,
+            client: client_for(api_url, auth_url, credential, &source)?,
             format,
             config_dir,
             config,
@@ -105,6 +129,23 @@ impl Context {
     #[must_use]
     pub fn json(&self) -> bool {
         self.format == Format::Json
+    }
+}
+
+/// A client for the credential: a browser login refreshes itself and saves
+/// each refresh in the store it came from.
+pub(crate) fn client_for(
+    api_url: &str,
+    auth_url: &str,
+    credential: Credential,
+    source: &Source,
+) -> Result<Client> {
+    match (&credential, source) {
+        (Credential::OAuth { .. }, Source::Store(store)) => Client::with_source(
+            api_url,
+            Arc::new(Session::new(auth_url, store.clone(), credential)),
+        ),
+        _ => Client::new(api_url, credential.bearer()),
     }
 }
 

@@ -19,12 +19,22 @@ const KEYRING_SERVICE: &str = "visor-cli";
 const KEYRING_USER: &str = "default";
 const FILE_NAME: &str = "credentials.json";
 
-/// A stored credential. Tagged by kind so OAuth tokens (ENG-2592) can join
-/// personal tokens without breaking existing logins.
+/// A stored credential, tagged by kind.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Credential {
+    /// A personal API token from Settings > Connected apps.
     PersonalToken { token: String },
+    /// The tokens of a browser login (`visor auth login`).
+    #[serde(rename = "oauth")]
+    OAuth {
+        access_token: String,
+        refresh_token: String,
+        /// Unix time when the access token expires.
+        expires_at: i64,
+        /// Space-separated scopes, such as `pfm:read pfm:transactions:write`.
+        scope: String,
+    },
 }
 
 impl Credential {
@@ -32,6 +42,23 @@ impl Credential {
     pub fn bearer(&self) -> &str {
         match self {
             Self::PersonalToken { token } => token,
+            Self::OAuth { access_token, .. } => access_token,
+        }
+    }
+
+    #[must_use]
+    pub fn refresh_token(&self) -> Option<&str> {
+        match self {
+            Self::PersonalToken { .. } => None,
+            Self::OAuth { refresh_token, .. } => Some(refresh_token),
+        }
+    }
+
+    #[must_use]
+    pub fn expires_at(&self) -> Option<i64> {
+        match self {
+            Self::PersonalToken { .. } => None,
+            Self::OAuth { expires_at, .. } => Some(*expires_at),
         }
     }
 }
@@ -42,6 +69,15 @@ impl fmt::Debug for Credential {
             Self::PersonalToken { token } => f
                 .debug_struct("PersonalToken")
                 .field("token", &redact(token))
+                .finish(),
+            Self::OAuth {
+                expires_at, scope, ..
+            } => f
+                .debug_struct("OAuth")
+                .field("access_token", &"…")
+                .field("refresh_token", &"…")
+                .field("expires_at", expires_at)
+                .field("scope", scope)
                 .finish(),
         }
     }
@@ -224,6 +260,29 @@ mod tests {
         let debug = format!("{credential:?}");
         assert!(!debug.contains("supersecret"), "{debug}");
         assert!(debug.contains("visor_pat_abcd2345_…"), "{debug}");
+    }
+
+    #[test]
+    fn oauth_credentials_round_trip_and_hide_their_tokens() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = Store::File(dir.path().join(FILE_NAME));
+        let credential = Credential::OAuth {
+            access_token: "access-secret".into(),
+            refresh_token: "refresh-secret".into(),
+            expires_at: 1_800_000_000,
+            scope: "pfm:read".into(),
+        };
+
+        store.save(&credential).unwrap();
+
+        assert_eq!(store.load().unwrap(), Some(credential.clone()));
+        let debug = format!("{credential:?}");
+        assert!(!debug.contains("secret"), "{debug}");
+        assert!(
+            fs::read_to_string(dir.path().join(FILE_NAME))
+                .unwrap()
+                .contains(r#""kind":"oauth""#)
+        );
     }
 
     #[test]

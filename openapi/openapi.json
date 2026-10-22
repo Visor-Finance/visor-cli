@@ -1647,11 +1647,26 @@
         "description": "Personal API token created in Visor Settings",
         "scheme": "bearer",
         "type": "http"
+      },
+      "visor_cli_oauth": {
+        "description": "OAuth 2.0 access token of the Visor CLI browser login (authorization code with PKCE). Only the first-party Visor CLI client can use it on this API.",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://dashboard.visorfinance.app/oauth/authorize",
+            "refreshUrl": "https://dashboard.visorfinance.app/oauth/token",
+            "scopes": {
+              "pfm:read": "Read financial data",
+              "pfm:transactions:write": "Create, edit, and delete transactions"
+            },
+            "tokenUrl": "https://dashboard.visorfinance.app/oauth/token"
+          }
+        },
+        "type": "oauth2"
       }
     }
   },
   "info": {
-    "description": "Personal REST API for Visor Premium users. Authenticate with a personal API token created in Visor Settings, sent as `Authorization: Bearer visor_pat_...`.",
+    "description": "Personal REST API for Visor Premium users. Authenticate with a personal API token created in Visor Settings, sent as `Authorization: Bearer visor_pat_...`, or with an OAuth access token from the Visor CLI browser login.",
     "title": "Visor Personal API",
     "version": "1.0.0"
   },
@@ -7083,6 +7098,11 @@
   "security": [
     {
       "personal_api_token": []
+    },
+    {
+      "visor_cli_oauth": [
+        "pfm:read"
+      ]
     }
   ],
   "servers": [

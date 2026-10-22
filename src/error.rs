@@ -29,6 +29,15 @@ pub enum Error {
     #[error("not logged in. Run `visor auth login` or set VISOR_TOKEN")]
     NotLoggedIn,
 
+    #[error("the browser login expired or was revoked. Run `visor auth login` again")]
+    LoginExpired,
+
+    #[error("login failed: {0}")]
+    Login(String),
+
+    #[error("{0} check(s) failed")]
+    ChecksFailed(usize),
+
     #[error("{0}")]
     Usage(String),
 
@@ -69,9 +78,9 @@ impl Error {
         match self {
             Self::Api(api) => api.exit_code(),
             Self::Network(_) => exit::UNAVAILABLE,
-            Self::NotLoggedIn => exit::AUTH,
+            Self::NotLoggedIn | Self::LoginExpired | Self::Login(_) => exit::AUTH,
             Self::Usage(_) => exit::USAGE,
-            Self::Credentials(_) | Self::Io { .. } | Self::Decode(_) => exit::FAILURE,
+            Self::Credentials(_) | Self::Io { .. } | Self::Decode(_) | Self::ChecksFailed(_) => exit::FAILURE,
         }
     }
 
@@ -144,12 +153,15 @@ impl ApiError {
                 "Check the token, then run `visor auth login` again.".to_owned()
             }
             "TOKEN_EXPIRED" | "TOKEN_REVOKED" => {
-                format!("Create a new token at {TOKENS_URL} and run `visor auth login`.")
+                "Run `visor auth login` again. With VISOR_TOKEN, create a new token in Settings.".to_owned()
             }
             "PLAN_REQUIRED" => "The personal API needs an active Premium plan.".to_owned(),
             "INSUFFICIENT_SCOPE" => {
                 let scope = self.details["required_scope"].as_str().unwrap_or("another scope");
-                format!("This token lacks `{scope}`. Create a token with that access at {TOKENS_URL}.")
+                format!(
+                    "This login lacks `{scope}`. Run `visor auth login` and choose Read and record \
+                     transactions, or create a token with that access at {TOKENS_URL}."
+                )
             }
             "RATE_LIMITED" => match self.details["retry_after_seconds"].as_u64() {
                 Some(seconds) => format!("Try again in {seconds} seconds."),
