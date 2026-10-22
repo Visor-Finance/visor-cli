@@ -5,6 +5,8 @@ people who use the CLI: what they can do now, what changed, what to watch for.
 
 ## Unreleased
 
+## 0.3.0 - 2026-10-21
+
 - `--json` errors are JSON too: `{"error": {"code", "message", "exit_code", ...}}` on standard error, with the HTTP status, details, and request ID for an API error.
 - `--debug` (or `VISOR_DEBUG=1`) prints each HTTP request on standard error: method, URL, status, time, and request ID, never the token.
 - `visor tx list --csv` exports transactions for a spreadsheet, with names instead of IDs and signed amounts. Text that a spreadsheet would run as a formula is escaped.
