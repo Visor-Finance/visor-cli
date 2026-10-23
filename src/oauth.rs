@@ -62,8 +62,9 @@ fn now() -> i64 {
     chrono::Utc::now().timestamp()
 }
 
-/// Runs the browser login and returns the credential to store.
-pub fn login(auth_url: &str, open_browser: bool) -> Result<Credential> {
+/// Runs the browser login and returns the credential to store. `scope`
+/// asks the consent page to preselect that access, such as Pix.
+pub fn login(auth_url: &str, open_browser: bool, scope: Option<&str>) -> Result<Credential> {
     let listener = TcpListener::bind("127.0.0.1:0")
         .map_err(|error| Error::io("cannot listen for the browser callback", error))?;
     let port = listener
@@ -73,7 +74,7 @@ pub fn login(auth_url: &str, open_browser: bool) -> Result<Credential> {
     let redirect_uri = format!("http://127.0.0.1:{port}/callback");
     let pkce = Pkce::new()?;
     let state = random_token(16)?;
-    let url = authorize_url(auth_url, &redirect_uri, &pkce.challenge, &state)?;
+    let url = authorize_url(auth_url, &redirect_uri, &pkce.challenge, &state, scope)?;
 
     // Like `fly auth login`: say what opens, and give the URL a line of its
     // own so it can be copied to a browser elsewhere on this machine.
@@ -100,7 +101,13 @@ pub fn login(auth_url: &str, open_browser: bool) -> Result<Credential> {
     tokens.into_credential(None)
 }
 
-fn authorize_url(auth_url: &str, redirect_uri: &str, challenge: &str, state: &str) -> Result<Url> {
+fn authorize_url(
+    auth_url: &str,
+    redirect_uri: &str,
+    challenge: &str,
+    state: &str,
+    scope: Option<&str>,
+) -> Result<Url> {
     let mut url = Url::parse(&format!("{}/oauth/authorize", auth_url.trim_end_matches('/')))
         .map_err(|error| Error::usage(format!("VISOR_AUTH_URL is not a URL: {error}")))?;
     url.query_pairs_mut()
@@ -110,7 +117,39 @@ fn authorize_url(auth_url: &str, redirect_uri: &str, challenge: &str, state: &st
         .append_pair("code_challenge", challenge)
         .append_pair("code_challenge_method", "S256")
         .append_pair("state", state);
+    if let Some(scope) = scope {
+        url.query_pairs_mut().append_pair("scope", scope);
+    }
     Ok(url)
+}
+
+/// Ends a browser login on Visor (RFC 7009). Revoking either token of a
+/// login ends the whole login; other logins keep working.
+pub fn revoke(auth_url: &str, token: &str) -> Result<()> {
+    let url = format!("{}/oauth/revoke", auth_url.trim_end_matches('/'));
+    let started = Instant::now();
+    let sent = client::http()?
+        .post(&url)
+        .header(reqwest::header::ACCEPT, "application/json")
+        .form(&[
+            ("client_id", CLIENT_ID),
+            ("token", token),
+            ("token_type_hint", "refresh_token"),
+        ])
+        .send();
+    let outcome = sent.as_ref().map_or_else(ToString::to_string, |response| {
+        response.status().as_str().to_owned()
+    });
+    crate::debug::request("POST", &url, &outcome, started.elapsed(), None);
+    let response = sent.map_err(Error::Network)?;
+    if response.status().is_success() {
+        Ok(())
+    } else {
+        Err(Error::Login(format!(
+            "Visor answered the revocation with HTTP {}",
+            response.status().as_u16()
+        )))
+    }
 }
 
 /// What the browser sent to the callback.
@@ -462,6 +501,7 @@ mod tests {
             "http://127.0.0.1:5000/callback",
             "ch",
             "st",
+            Some("pfm:read pix:payments:write"),
         )
         .unwrap();
 
@@ -471,6 +511,7 @@ mod tests {
         assert!(query.contains(&("redirect_uri".into(), "http://127.0.0.1:5000/callback".into())));
         assert!(query.contains(&("code_challenge_method".into(), "S256".into())));
         assert!(query.contains(&("state".into(), "st".into())));
+        assert!(query.contains(&("scope".into(), "pfm:read pix:payments:write".into())));
     }
 
     #[test]

@@ -35,6 +35,8 @@ impl Harness {
             .env("VISOR_CONFIG_DIR", self.config.path())
             .env("VISOR_CREDENTIAL_STORE", "file")
             .env("VISOR_TOKEN", TOKEN)
+            .env("BROWSER", "true")
+            .env_remove("VISOR_FORCE_TTY")
             .env_remove("VISOR_SPACE");
         cmd
     }
@@ -1060,4 +1062,322 @@ fn all_and_limit_cannot_be_combined() {
         .assert()
         .code(2)
         .stderr(predicate::str::contains("cannot be used with"));
+}
+
+const PIX: &str = "7b2d5e91-3c4a-4f68-9a0b-1c2d3e4f5a6b";
+const START_URL: &str = "https://dashboard.visorfinance.app/pix/payments/continue?ref=SFMyNTY";
+const END_TO_END_ID: &str = "E60746948202610221531abcdef123456";
+
+fn pix(status: &str) -> Value {
+    let pending = status == "pending";
+    let completed = status == "completed";
+    json!({"data": {
+        "id": PIX, "status": status,
+        "waiting_for": if pending { json!("payment_confirmation") } else { Value::Null },
+        "amount": "20.00", "currency": "BRL", "pix_key_masked": "***.456.789-**",
+        "recipient": if completed { json!("Maria da Silva") } else { Value::Null },
+        "description": "Almoço", "bank": {"name": "Nubank", "linked": true},
+        "start_url": if pending { json!(START_URL) } else { Value::Null },
+        "end_to_end_id": if completed { json!(END_TO_END_ID) } else { Value::Null },
+        "failure": if status == "failed" {
+            json!({"code": "SALDO_INSUFICIENTE", "message": "Saldo insuficiente"})
+        } else { Value::Null },
+        "created_at": "2026-10-22T15:31:02Z",
+        "paid_at": if completed { json!("2026-10-22T15:32:40Z") } else { Value::Null }
+    }})
+}
+
+impl Harness {
+    fn start_pix(&mut self, body: &Value) -> Mock {
+        self.server
+            .mock("POST", "/v1/pix-payments")
+            .match_header("authorization", format!("Bearer {TOKEN}").as_str())
+            .match_header("idempotency-key", Matcher::Regex("^[0-9a-f-]{36}$".into()))
+            .match_body(Matcher::Json(body.clone()))
+            .with_status(201)
+            .with_header("content-type", "application/json")
+            .with_body(pix("pending").to_string())
+            .create()
+    }
+}
+
+#[test]
+fn pix_shows_a_qr_code_and_waits_until_it_is_paid() {
+    let mut harness = Harness::new();
+    let start = harness.start_pix(&json!({
+        "pix_key": "123.456.789-09", "amount": "20.00", "description": "Almoço", "bank": "Nubank"
+    }));
+    let poll = harness.get(&format!("/v1/pix-payments/{PIX}"), &pix("completed"));
+
+    harness
+        .visor()
+        .args([
+            "pix",
+            "123.456.789-09",
+            "20,00",
+            "-d",
+            "Almoço",
+            "--bank",
+            "Nubank",
+            "--qr",
+        ])
+        .assert()
+        .success()
+        .stderr(predicate::str::contains(
+            "Pix of R$ 20,00 to ***.456.789-** from Nubank",
+        ))
+        .stderr(predicate::str::contains(
+            "Scan this code with your phone's camera",
+        ))
+        .stderr(predicate::str::contains("█"))
+        .stderr(predicate::str::contains(START_URL))
+        .stderr(predicate::str::contains("Pix completed"))
+        .stdout(predicate::str::contains(END_TO_END_ID))
+        .stdout(predicate::str::contains("Maria da Silva"));
+    start.assert();
+    poll.assert();
+}
+
+#[test]
+fn pix_without_a_terminal_prints_the_link_and_fails_when_the_pix_fails() {
+    let mut harness = Harness::new();
+    harness.start_pix(&json!({"pix_key": "maria@example.com", "amount": "20.00"}));
+    harness.get(&format!("/v1/pix-payments/{PIX}"), &pix("failed"));
+
+    harness
+        .visor()
+        .args(["pix", "maria@example.com", "20"])
+        .assert()
+        .code(5)
+        .stderr(predicate::str::contains("Open this page to continue the Pix"))
+        .stderr(predicate::str::contains(START_URL))
+        .stderr(predicate::str::contains(
+            "the Pix was not paid: Saldo insuficiente",
+        ))
+        .stdout(predicate::str::contains("failed"));
+}
+
+#[test]
+fn pix_asks_where_to_confirm_on_a_terminal() {
+    let mut harness = Harness::new();
+    harness.start_pix(&json!({"pix_key": "maria@example.com", "amount": "20.00"}));
+    harness.get(&format!("/v1/pix-payments/{PIX}"), &pix("completed"));
+
+    // The phone is the default answer; the bank is linked, so the CLI says where.
+    harness
+        .visor()
+        .args(["pix", "maria@example.com", "20"])
+        .env("VISOR_FORCE_TTY", "1")
+        .write_stdin("\n")
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("Where do you want to confirm the Pix?"))
+        .stderr(predicate::str::contains("1 On your phone"))
+        .stderr(predicate::str::contains(
+            "Confirm on the device where you linked Nubank",
+        ))
+        .stderr(predicate::str::contains("Scan this code"));
+}
+
+#[test]
+fn pix_no_wait_json_prints_the_started_pix() {
+    let mut harness = Harness::new();
+    harness.start_pix(&json!({"pix_key": "+5511987654321", "amount": "20.00", "key_type": "phone"}));
+    let poll = harness
+        .server
+        .mock("GET", format!("/v1/pix-payments/{PIX}").as_str())
+        .expect(0)
+        .create();
+
+    let output = harness
+        .visor()
+        .args([
+            "pix",
+            "+5511987654321",
+            "20",
+            "--key-type",
+            "phone",
+            "--no-wait",
+            "--json",
+        ])
+        .output()
+        .unwrap();
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let body: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(body["data"]["id"], PIX);
+    assert_eq!(body["data"]["start_url"], START_URL);
+    poll.assert();
+}
+
+#[test]
+fn pix_status_reads_the_pix_once() {
+    let mut harness = Harness::new();
+    harness.get(&format!("/v1/pix-payments/{PIX}"), &pix("pending"));
+
+    harness
+        .visor()
+        .args(["pix", "status", PIX])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("pending"))
+        .stdout(predicate::str::contains("R$ 20,00"))
+        .stdout(predicate::str::contains(START_URL));
+}
+
+#[test]
+fn pix_bank_required_lists_the_banks() {
+    let mut harness = Harness::new();
+    harness
+        .server
+        .mock("POST", "/v1/pix-payments")
+        .with_status(422)
+        .with_body(
+            json!({"errors": [{"code": "BANK_REQUIRED", "message": "Send the bank.",
+                               "details": {"banks": ["Nubank", "Itaú"]}}]})
+            .to_string(),
+        )
+        .create();
+
+    harness
+        .visor()
+        .args(["pix", "maria@example.com", "20"])
+        .assert()
+        .code(5)
+        .stderr(predicate::str::contains(r#"--bank, such as "Nubank", "Itaú""#));
+}
+
+#[test]
+fn pix_without_pix_access_and_no_terminal_says_what_to_run() {
+    let mut harness = Harness::new();
+    harness
+        .server
+        .mock("POST", "/v1/pix-payments")
+        .with_status(403)
+        .with_body(
+            json!({"errors": [{"code": "INSUFFICIENT_SCOPE", "message": "Missing scope.",
+                               "details": {"required_scope": "pix:payments:write"}}]})
+            .to_string(),
+        )
+        .create();
+
+    harness
+        .visor()
+        .args(["pix", "maria@example.com", "20"])
+        .assert()
+        .code(3)
+        .stderr(predicate::str::contains("Run `visor pix` in a terminal"))
+        .stderr(predicate::str::contains("/oauth/authorize").not());
+}
+
+#[test]
+fn pix_rejects_a_negative_amount_before_calling_the_api() {
+    Harness::new()
+        .visor()
+        .args(["pix", "maria@example.com", "-20"])
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains("a Pix amount is positive"));
+}
+
+#[test]
+fn pix_asks_for_the_bank_on_a_terminal_and_retries_with_the_same_key() {
+    let mut harness = Harness::new();
+    let missing_bank = harness
+        .server
+        .mock("POST", "/v1/pix-payments")
+        .match_header("idempotency-key", "pix-1")
+        .match_body(Matcher::Json(
+            json!({"pix_key": "maria@example.com", "amount": "20.00"}),
+        ))
+        .with_status(422)
+        .with_body(
+            json!({"errors": [{"code": "BANK_REQUIRED", "message": "Send the bank.",
+                               "details": {"banks": ["Itaú", "Nubank"]}}]})
+            .to_string(),
+        )
+        .create();
+    let started = harness
+        .server
+        .mock("POST", "/v1/pix-payments")
+        .match_header("idempotency-key", "pix-1")
+        .match_body(Matcher::Json(
+            json!({"pix_key": "maria@example.com", "amount": "20.00", "bank": "Nubank"}),
+        ))
+        .with_status(201)
+        .with_body(pix("pending").to_string())
+        .create();
+    harness.get(&format!("/v1/pix-payments/{PIX}"), &pix("completed"));
+
+    // 2 picks Nubank; Enter then confirms on this computer.
+    harness
+        .visor()
+        .args(["pix", "maria@example.com", "20", "--idempotency-key", "pix-1"])
+        .env("VISOR_FORCE_TTY", "1")
+        .write_stdin("2\n\n")
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("Which bank does the Pix come from?"))
+        .stderr(predicate::str::contains("1 Itaú"))
+        .stderr(predicate::str::contains("2 Nubank"))
+        .stderr(predicate::str::contains("Pix completed"));
+    missing_bank.assert();
+    started.assert();
+}
+
+#[test]
+fn pix_asks_whether_an_ambiguous_key_is_a_cpf_or_a_phone() {
+    let mut harness = Harness::new();
+    harness
+        .server
+        .mock("POST", "/v1/pix-payments")
+        .match_body(Matcher::Json(
+            json!({"pix_key": "11987654321", "amount": "20.00"}),
+        ))
+        .with_status(422)
+        .with_body(
+            json!({"errors": [{"code": "AMBIGUOUS_PIX_KEY", "message": "CPF or phone.", "details": {}}]})
+                .to_string(),
+        )
+        .create();
+    let started = harness
+        .server
+        .mock("POST", "/v1/pix-payments")
+        .match_body(Matcher::Json(
+            json!({"pix_key": "11987654321", "amount": "20.00", "key_type": "phone"}),
+        ))
+        .with_status(201)
+        .with_body(pix("pending").to_string())
+        .create();
+
+    harness
+        .visor()
+        .args(["pix", "11987654321", "20", "--no-wait"])
+        .env("VISOR_FORCE_TTY", "1")
+        .write_stdin("2\n")
+        .assert()
+        .success()
+        .stderr(predicate::str::contains(
+            "Is 11987654321 a CPF or a phone number?",
+        ))
+        .stdout(predicate::str::contains(START_URL));
+    started.assert();
+}
+
+#[test]
+fn pix_link_device_asks_the_api_to_link_the_bank_again() {
+    let mut harness = Harness::new();
+    let start =
+        harness.start_pix(&json!({"pix_key": "maria@example.com", "amount": "20.00", "link_device": true}));
+
+    harness
+        .visor()
+        .args(["pix", "maria@example.com", "20", "--link-device", "--no-wait"])
+        .assert()
+        .success();
+    start.assert();
 }

@@ -53,6 +53,17 @@ pub enum Error {
 
     #[error("unexpected response from the Visor API: {0}")]
     Decode(String),
+
+    /// The user canceled a question with Esc or Ctrl+C.
+    #[error("canceled")]
+    Canceled,
+
+    /// A Pix that ended without being paid: `failed`, `canceled`, or `expired`.
+    #[error("{message}")]
+    PixNotPaid { status: String, message: String },
+
+    #[error("the Pix is still waiting after {minutes} minutes. Check it with `visor pix status {id}`")]
+    PixWaitTimeout { id: String, minutes: u64 },
 }
 
 impl Error {
@@ -80,7 +91,13 @@ impl Error {
             Self::Network(_) => exit::UNAVAILABLE,
             Self::NotLoggedIn | Self::LoginExpired | Self::Login(_) => exit::AUTH,
             Self::Usage(_) => exit::USAGE,
-            Self::Credentials(_) | Self::Io { .. } | Self::Decode(_) | Self::ChecksFailed(_) => exit::FAILURE,
+            Self::PixNotPaid { .. } => exit::REJECTED,
+            Self::Credentials(_)
+            | Self::Io { .. }
+            | Self::Decode(_)
+            | Self::ChecksFailed(_)
+            | Self::PixWaitTimeout { .. }
+            | Self::Canceled => exit::FAILURE,
         }
     }
 
@@ -99,6 +116,9 @@ impl Error {
             Self::Credentials(_) => "CREDENTIAL_STORE".to_owned(),
             Self::Io { .. } => "IO_ERROR".to_owned(),
             Self::Decode(_) => "UNEXPECTED_RESPONSE".to_owned(),
+            Self::PixNotPaid { status, .. } => format!("PIX_{}", status.to_uppercase()),
+            Self::PixWaitTimeout { .. } => "PIX_WAIT_TIMEOUT".to_owned(),
+            Self::Canceled => "CANCELED".to_owned(),
         };
         let mut error = serde_json::json!({
             "code": code,
@@ -179,6 +199,17 @@ impl ApiError {
         }
     }
 
+    /// The banks in `details.banks`, quoted for a `--bank` flag.
+    fn banks(&self) -> Option<String> {
+        let banks: Vec<String> = self.details["banks"]
+            .as_array()?
+            .iter()
+            .filter_map(Value::as_str)
+            .map(|bank| format!("\"{bank}\""))
+            .collect();
+        (!banks.is_empty()).then(|| banks.join(", "))
+    }
+
     fn hint(&self) -> Option<String> {
         let hint = match self.code.as_str() {
             "UNAUTHENTICATED" | "INVALID_TOKEN" => {
@@ -188,12 +219,50 @@ impl ApiError {
                 "Run `visor auth login` again. With VISOR_TOKEN, create a new token in Settings.".to_owned()
             }
             "PLAN_REQUIRED" => "The personal API needs an active Pro or Premium plan.".to_owned(),
+            "INSUFFICIENT_SCOPE" if self.details["required_scope"] == PIX_SCOPE => {
+                "Starting a Pix needs the Visor CLI browser login with Pix access. Run `visor pix` \
+                 in a terminal to allow it in the browser. A personal API token or VISOR_TOKEN \
+                 cannot start a Pix."
+                    .to_owned()
+            }
             "INSUFFICIENT_SCOPE" => {
                 let scope = self.details["required_scope"].as_str().unwrap_or("another scope");
                 format!(
                     "This login lacks `{scope}`. Run `visor auth login` and choose Read and record \
                      transactions, or create a token with that access at {TOKENS_URL}."
                 )
+            }
+            "BANK_REQUIRED" => match self.banks() {
+                Some(banks) => format!("Choose the bank the Pix comes from with --bank, such as {banks}."),
+                None => "Choose the bank the Pix comes from with --bank.".to_owned(),
+            },
+            "BANK_NOT_FOUND" => match self.banks() {
+                Some(banks) => format!("Banks you can pay from with --bank: {banks}."),
+                None => "Choose another bank with --bank.".to_owned(),
+            },
+            "AMBIGUOUS_PIX_KEY" => {
+                "Run the command again with --key-type cpf or --key-type phone.".to_owned()
+            }
+            "CPF_REQUIRED" => format!("Add your CPF to your profile at {SETTINGS_URL}, then try again."),
+            "PREMIUM_REQUIRED" => format!(
+                "See the Premium plan at {}.",
+                self.details["url"].as_str().unwrap_or(PLAN_URL)
+            ),
+            "PIX_MONTHLY_LIMIT_REACHED" => {
+                let limit = self.details["limit"]
+                    .as_u64()
+                    .map_or_else(String::new, |limit| format!(" of {limit} Pix"));
+                match self.details["renews_on"].as_str() {
+                    Some(renews_on) => {
+                        format!("You used this month's limit{limit}. It renews on {renews_on}.")
+                    }
+                    None => format!("You used this month's limit{limit}."),
+                }
+            }
+            "PIX_UNAVAILABLE" => "Pix through Visor is not available for this account yet.".to_owned(),
+            "PIX_START_FAILED" => {
+                "Run the command again; it sends a new Idempotency-Key unless you pass --idempotency-key."
+                    .to_owned()
             }
             "RATE_LIMITED" => match self.details["retry_after_seconds"].as_u64() {
                 Some(seconds) => format!("Try again in {seconds} seconds."),
@@ -206,6 +275,11 @@ impl ApiError {
 }
 
 pub const TOKENS_URL: &str = "https://dashboard.visorfinance.app/settings/connected_apps";
+const SETTINGS_URL: &str = "https://dashboard.visorfinance.app/settings";
+const PLAN_URL: &str = "https://dashboard.visorfinance.app/settings/plan";
+
+/// The scope that starting a Pix needs.
+pub const PIX_SCOPE: &str = "pix:payments:write";
 
 impl fmt::Display for ApiError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -281,6 +355,40 @@ mod tests {
         assert_eq!(local["error"]["code"], "NOT_LOGGED_IN");
         assert_eq!(local["error"]["exit_code"], exit::AUTH);
         assert!(local["error"].get("status").is_none());
+    }
+
+    #[test]
+    fn pix_errors_say_what_to_do_next() {
+        let hint = |code: &str, details: &str| {
+            let body = format!(r#"{{"errors":[{{"code":"{code}","message":"m","details":{details}}}]}}"#);
+            ApiError::from_body(422, &body, None).to_string()
+        };
+
+        let text = hint("BANK_REQUIRED", r#"{"banks":["Nubank","Itaú"]}"#);
+        assert!(text.contains(r#"--bank, such as "Nubank", "Itaú""#), "{text}");
+        let text = hint("AMBIGUOUS_PIX_KEY", "{}");
+        assert!(text.contains("--key-type cpf or --key-type phone"), "{text}");
+        let text = hint(
+            "PIX_MONTHLY_LIMIT_REACHED",
+            r#"{"limit":30,"renews_on":"2026-11-01"}"#,
+        );
+        assert!(
+            text.contains("limit of 30 Pix. It renews on 2026-11-01"),
+            "{text}"
+        );
+        let text = hint("INSUFFICIENT_SCOPE", r#"{"required_scope":"pix:payments:write"}"#);
+        assert!(text.contains("Run `visor pix` in a terminal"), "{text}");
+    }
+
+    #[test]
+    fn an_unpaid_pix_is_a_rejected_request() {
+        let error = Error::PixNotPaid {
+            status: "failed".into(),
+            message: "Saldo insuficiente".into(),
+        };
+
+        assert_eq!(error.exit_status(), exit::REJECTED);
+        assert_eq!(error.to_json()["error"]["code"], "PIX_FAILED");
     }
 
     #[test]

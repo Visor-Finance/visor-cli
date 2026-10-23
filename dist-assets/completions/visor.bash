@@ -64,6 +64,9 @@ _visor() {
             visor,overview)
                 cmd="visor__subcmd__overview"
                 ;;
+            visor,pix)
+                cmd="visor__subcmd__pix"
+                ;;
             visor,spaces)
                 cmd="visor__subcmd__spaces"
                 ;;
@@ -250,6 +253,9 @@ _visor() {
             visor__subcmd__help,overview)
                 cmd="visor__subcmd__help__subcmd__overview"
                 ;;
+            visor__subcmd__help,pix)
+                cmd="visor__subcmd__help__subcmd__pix"
+                ;;
             visor__subcmd__help,spaces)
                 cmd="visor__subcmd__help__subcmd__spaces"
                 ;;
@@ -303,6 +309,9 @@ _visor() {
                 ;;
             visor__subcmd__help__subcmd__notifications,list)
                 cmd="visor__subcmd__help__subcmd__notifications__subcmd__list"
+                ;;
+            visor__subcmd__help__subcmd__pix,status)
+                cmd="visor__subcmd__help__subcmd__pix__subcmd__status"
                 ;;
             visor__subcmd__help__subcmd__spaces,list)
                 cmd="visor__subcmd__help__subcmd__spaces__subcmd__list"
@@ -375,6 +384,18 @@ _visor() {
                 ;;
             visor__subcmd__notifications__subcmd__help,list)
                 cmd="visor__subcmd__notifications__subcmd__help__subcmd__list"
+                ;;
+            visor__subcmd__pix,help)
+                cmd="visor__subcmd__pix__subcmd__help"
+                ;;
+            visor__subcmd__pix,status)
+                cmd="visor__subcmd__pix__subcmd__status"
+                ;;
+            visor__subcmd__pix__subcmd__help,help)
+                cmd="visor__subcmd__pix__subcmd__help__subcmd__help"
+                ;;
+            visor__subcmd__pix__subcmd__help,status)
+                cmd="visor__subcmd__pix__subcmd__help__subcmd__status"
                 ;;
             visor__subcmd__spaces,help)
                 cmd="visor__subcmd__spaces__subcmd__help"
@@ -476,7 +497,7 @@ _visor() {
 
     case "${cmd}" in
         visor)
-            opts="-s -h -V --json --space --debug --api-url --auth-url --help --version auth whoami doctor open me spaces transactions tx accounts categories tags cards subscriptions fixed-bills installments goals investments connections overview notifications completions help"
+            opts="-s -h -V --json --space --debug --api-url --auth-url --help --version auth whoami doctor open me spaces transactions tx accounts categories tags cards subscriptions fixed-bills installments goals investments connections overview pix notifications completions help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1424,7 +1445,7 @@ _visor() {
             return 0
             ;;
         visor__subcmd__help)
-            opts="auth whoami doctor open me spaces transactions accounts categories tags cards subscriptions fixed-bills installments goals investments connections overview notifications completions help"
+            opts="auth whoami doctor open me spaces transactions accounts categories tags cards subscriptions fixed-bills installments goals investments connections overview pix notifications completions help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1832,6 +1853,34 @@ _visor() {
         visor__subcmd__help__subcmd__overview)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        visor__subcmd__help__subcmd__pix)
+            opts="status"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        visor__subcmd__help__subcmd__pix__subcmd__status)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -2420,6 +2469,128 @@ _visor() {
         visor__subcmd__overview)
             opts="-s -h --json --space --debug --api-url --auth-url --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --space)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -s)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --api-url)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --auth-url)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        visor__subcmd__pix)
+            opts="-d -s -h --description --bank --key-type --qr --open --no-wait --link-device --idempotency-key --json --space --debug --api-url --auth-url --help status help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --description)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -d)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --bank)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --key-type)
+                    COMPREPLY=($(compgen -W "cpf cnpj phone email evp" -- "${cur}"))
+                    return 0
+                    ;;
+                --idempotency-key)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --space)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -s)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --api-url)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --auth-url)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        visor__subcmd__pix__subcmd__help)
+            opts="status help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        visor__subcmd__pix__subcmd__help__subcmd__help)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        visor__subcmd__pix__subcmd__help__subcmd__status)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        visor__subcmd__pix__subcmd__status)
+            opts="-s -h --json --space --debug --api-url --auth-url --help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi

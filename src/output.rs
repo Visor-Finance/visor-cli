@@ -38,6 +38,15 @@ pub fn note(text: &str) {
     eprintln!("{text}");
 }
 
+/// True when someone can answer a prompt: standard input and standard error
+/// are terminals. `VISOR_FORCE_TTY=1` says so for a wrapper (or a test) that
+/// relays the prompts, like `GH_FORCE_TTY`.
+#[must_use]
+pub fn interactive() -> bool {
+    std::env::var("VISOR_FORCE_TTY").is_ok_and(|value| !value.is_empty() && value != "0")
+        || (io::stdin().is_terminal() && io::stderr().is_terminal())
+}
+
 /// ANSI styling for one stream, off for a pipe or under `NO_COLOR`.
 #[derive(Debug, Clone, Copy)]
 pub struct Paint {
@@ -53,6 +62,12 @@ impl Paint {
     #[must_use]
     pub fn stderr() -> Self {
         Self::when(io::stderr().is_terminal())
+    }
+
+    /// No styling, for tests.
+    #[must_use]
+    pub fn plain() -> Self {
+        Self { on: false }
     }
 
     fn when(is_terminal: bool) -> Self {
@@ -77,6 +92,18 @@ impl Paint {
     #[must_use]
     pub fn dim(self, text: &str) -> String {
         self.wrap("2", text)
+    }
+
+    /// An answer the user picked.
+    #[must_use]
+    pub fn accent(self, text: &str) -> String {
+        self.wrap("36", text)
+    }
+
+    /// The highlighted option of a picker.
+    #[must_use]
+    pub fn highlight(self, text: &str) -> String {
+        self.wrap("1;36", text)
     }
 
     #[must_use]
@@ -189,6 +216,23 @@ pub fn money(amount: &str, currency: &str) -> String {
     format!("{amount} {currency}")
 }
 
+/// A BRL amount the Brazilian way: `1234.5` is `R$ 1.234,50`.
+#[must_use]
+pub fn brl(amount: &str) -> String {
+    let (sign, amount) = amount
+        .strip_prefix('-')
+        .map_or(("", amount), |amount| ("-", amount));
+    let (whole, cents) = amount.split_once('.').unwrap_or((amount, ""));
+    let mut grouped = String::new();
+    for (index, digit) in whole.chars().enumerate() {
+        if index > 0 && (whole.len() - index) % 3 == 0 {
+            grouped.push('.');
+        }
+        grouped.push(digit);
+    }
+    format!("{sign}R$ {grouped},{cents:0<2}")
+}
+
 #[must_use]
 pub fn opt_money(amount: Option<&str>, currency: &str) -> String {
     amount.map_or_else(|| "-".to_owned(), |amount| money(amount, currency))
@@ -240,6 +284,15 @@ mod tests {
     fn signs_debits() {
         assert_eq!(signed("12.50", "debit", "BRL"), "-12.50 BRL");
         assert_eq!(signed("12.50", "credit", "BRL"), "12.50 BRL");
+    }
+
+    #[test]
+    fn formats_brl() {
+        assert_eq!(brl("20.00"), "R$ 20,00");
+        assert_eq!(brl("1234.5"), "R$ 1.234,50");
+        assert_eq!(brl("1234567.89"), "R$ 1.234.567,89");
+        assert_eq!(brl("0.99"), "R$ 0,99");
+        assert_eq!(brl("-100"), "-R$ 100,00");
     }
 
     #[test]

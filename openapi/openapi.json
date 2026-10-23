@@ -74,6 +74,24 @@
         "title": "Card",
         "type": "object"
       },
+      "TransactionBatchCreateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "transactions": {
+            "items": {
+              "$ref": "#/components/schemas/TransactionBatchCreateItem"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "transactions"
+        ],
+        "title": "TransactionBatchCreateRequest",
+        "type": "object"
+      },
       "Investment": {
         "additionalProperties": false,
         "properties": {
@@ -165,6 +183,7 @@
       },
       "Transaction": {
         "additionalProperties": false,
+        "nullable": true,
         "properties": {
           "account_id": {
             "format": "uuid",
@@ -210,11 +229,12 @@
             "type": "string"
           },
           "source": {
-            "description": "`manual` for a transaction you recorded, `connected` for one that a bank sent, and `apple_pay` for one that the Apple Pay shortcut imported. Only `manual` accepts edits to every field.",
+            "description": "`manual` for a transaction you recorded, `connected` for one that a bank sent, `apple_pay` for one that the Apple Pay shortcut imported, and `pix` for a Pix you paid through Visor while the bank has not sent it yet. Only `manual` accepts edits to every field.",
             "enum": [
               "manual",
               "connected",
-              "apple_pay"
+              "apple_pay",
+              "pix"
             ],
             "type": "string"
           },
@@ -524,6 +544,128 @@
         "title": "OverviewProjection",
         "type": "object"
       },
+      "PixPayment": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "The amount in BRL as a decimal string",
+            "example": "20.00",
+            "format": "decimal",
+            "type": "string"
+          },
+          "bank": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PixPaymentBank"
+              }
+            ],
+            "description": "The bank the Pix comes from; `null` before a bank is chosen",
+            "nullable": true
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "currency": {
+            "example": "BRL",
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "end_to_end_id": {
+            "description": "The Pix end-to-end id of a completed Pix",
+            "nullable": true,
+            "type": "string"
+          },
+          "failure": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PixPaymentFailure"
+              }
+            ],
+            "description": "Set when the status is `failed`",
+            "nullable": true
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "paid_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "pix_key_masked": {
+            "description": "The Pix key with its middle hidden",
+            "type": "string"
+          },
+          "recipient": {
+            "description": "The recipient name, once the bank returns it",
+            "nullable": true,
+            "type": "string"
+          },
+          "start_url": {
+            "description": "The page to open in the browser while the Pix is `pending`: the bank page on the first Pix from a bank, then the page where the user confirms with biometrics. Only the user who started the Pix gets it.",
+            "format": "uri",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "description": "`pending` while the user authorizes the bank or confirms the Pix. Only `completed` means the Pix was paid; `failed`, `canceled`, and `expired` are final.",
+            "enum": [
+              "awaiting_confirmation",
+              "pending",
+              "completed",
+              "failed",
+              "canceled",
+              "expired"
+            ],
+            "type": "string"
+          },
+          "waiting_for": {
+            "description": "The step the user does next while the Pix is `pending`, else `null`",
+            "enum": [
+              "bank_authorization",
+              "payment_confirmation"
+            ],
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "waiting_for",
+          "amount",
+          "currency",
+          "pix_key_masked",
+          "recipient",
+          "description",
+          "bank",
+          "start_url",
+          "end_to_end_id",
+          "failure",
+          "created_at",
+          "paid_at"
+        ],
+        "title": "PixPayment",
+        "type": "object"
+      },
+      "PixPaymentResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PixPayment"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "PixPaymentResponse",
+        "type": "object"
+      },
       "OverviewUpcomingBill": {
         "additionalProperties": false,
         "properties": {
@@ -631,6 +773,25 @@
         "title": "Tag",
         "type": "object"
       },
+      "PixPaymentBank": {
+        "additionalProperties": false,
+        "properties": {
+          "linked": {
+            "description": "`false` while the user still has to authorize Visor at the bank. The first Pix from a bank opens the bank page.",
+            "type": "boolean"
+          },
+          "name": {
+            "example": "Nubank",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "linked"
+        ],
+        "title": "PixPaymentBank",
+        "type": "object"
+      },
       "OverviewCommittedOutflows": {
         "additionalProperties": false,
         "properties": {
@@ -681,6 +842,83 @@
           "data"
         ],
         "title": "CategoryListResponse",
+        "type": "object"
+      },
+      "TransactionBatchCreateItem": {
+        "additionalProperties": false,
+        "properties": {
+          "account_id": {
+            "description": "An account of the space. Its currency is the transaction's.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "amount": {
+            "description": "Positive decimal string with up to 2 decimal places. `type` gives the direction.",
+            "example": "42.90",
+            "format": "decimal",
+            "pattern": "^\\d{1,13}(\\.\\d{1,2})?$",
+            "type": "string"
+          },
+          "category_id": {
+            "description": "A category of the space",
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "idempotency_key": {
+            "description": "The same key format and account-scoped replay rules as the single-create Idempotency-Key header",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_\\-.:]+$",
+            "type": "string"
+          },
+          "ignored": {
+            "default": false,
+            "type": "boolean"
+          },
+          "merchant_name": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "notes": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "tag_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "transacted_at": {
+            "description": "RFC 3339 date and time, with an offset such as `-03:00` or `Z`. A future time records a pending transaction.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "debit",
+              "credit"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_id",
+          "transacted_at",
+          "description",
+          "amount",
+          "type",
+          "category_id",
+          "idempotency_key"
+        ],
+        "title": "TransactionBatchCreateItem",
         "type": "object"
       },
       "ConnectionListResponse": {
@@ -935,6 +1173,163 @@
           "data"
         ],
         "title": "CardListResponse",
+        "type": "object"
+      },
+      "TransactionBatchResult": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "additionalProperties": false,
+            "nullable": true,
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "details": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "details"
+            ],
+            "type": "object"
+          },
+          "index": {
+            "maximum": 99,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "created",
+              "replayed",
+              "failed"
+            ],
+            "type": "string"
+          },
+          "transaction": {
+            "additionalProperties": false,
+            "nullable": true,
+            "properties": {
+              "account_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "amount": {
+                "description": "Absolute amount as a decimal string, in `currency_code`. `type` gives the direction.",
+                "example": "42.90",
+                "format": "decimal",
+                "type": "string"
+              },
+              "category_id": {
+                "format": "uuid",
+                "nullable": true,
+                "type": "string"
+              },
+              "created_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "currency_code": {
+                "description": "ISO 4217 code",
+                "example": "BRL",
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "ignored": {
+                "description": "True when the transaction does not count in totals",
+                "type": "boolean"
+              },
+              "merchant_name": {
+                "nullable": true,
+                "type": "string"
+              },
+              "notes": {
+                "nullable": true,
+                "type": "string"
+              },
+              "source": {
+                "description": "`manual` for a transaction you recorded, `connected` for one that a bank sent, `apple_pay` for one that the Apple Pay shortcut imported, and `pix` for a Pix you paid through Visor while the bank has not sent it yet. Only `manual` accepts edits to every field.",
+                "enum": [
+                  "manual",
+                  "connected",
+                  "apple_pay",
+                  "pix"
+                ],
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "pending",
+                  "posted"
+                ],
+                "type": "string"
+              },
+              "tag_ids": {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "transacted_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "type": {
+                "description": "`debit` for money out, `credit` for money in",
+                "enum": [
+                  "debit",
+                  "credit"
+                ],
+                "type": "string"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "account_id",
+              "category_id",
+              "tag_ids",
+              "amount",
+              "type",
+              "currency_code",
+              "source",
+              "status",
+              "ignored",
+              "description",
+              "merchant_name",
+              "notes",
+              "transacted_at",
+              "created_at",
+              "updated_at"
+            ],
+            "title": "Transaction",
+            "type": "object"
+          }
+        },
+        "required": [
+          "index",
+          "status",
+          "transaction",
+          "error"
+        ],
+        "title": "TransactionBatchResult",
         "type": "object"
       },
       "RecurringExpense": {
@@ -1195,6 +1590,26 @@
         "title": "OverviewPeriod",
         "type": "object"
       },
+      "PixPaymentFailure": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "description": "The provider or Visor code of the failure",
+            "example": "SALDO_INSUFICIENTE",
+            "type": "string"
+          },
+          "message": {
+            "description": "Text for the user, in the language of their Visor account",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "PixPaymentFailure",
+        "type": "object"
+      },
       "Category": {
         "additionalProperties": false,
         "properties": {
@@ -1224,6 +1639,27 @@
             "description": "English name of a system category, or the name the user gave a custom category",
             "type": "string"
           },
+          "names": {
+            "additionalProperties": false,
+            "description": "English and Brazilian Portuguese labels using Visor's translations and fallbacks; both contain the user's name for a custom category",
+            "example": {
+              "en": "Groceries",
+              "pt-BR": "Supermercado"
+            },
+            "properties": {
+              "en": {
+                "type": "string"
+              },
+              "pt-BR": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "en",
+              "pt-BR"
+            ],
+            "type": "object"
+          },
           "parent_id": {
             "description": "Null for a top-level category",
             "format": "uuid",
@@ -1245,6 +1681,7 @@
           "id",
           "key",
           "name",
+          "names",
           "parent_id",
           "type",
           "kind",
@@ -1399,6 +1836,24 @@
         "title": "Bill",
         "type": "object"
       },
+      "TransactionBatchResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/TransactionBatchResult"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "TransactionBatchResponse",
+        "type": "object"
+      },
       "Overview": {
         "additionalProperties": false,
         "properties": {
@@ -1482,6 +1937,52 @@
           "errors"
         ],
         "title": "ErrorResponse",
+        "type": "object"
+      },
+      "PixPaymentCreateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "The amount in BRL as a positive decimal string with up to 2 decimal places",
+            "example": "20.00",
+            "format": "decimal",
+            "type": "string"
+          },
+          "bank": {
+            "description": "The bank the user pays from. Without it, Visor uses the one bank the user already linked, or answers `BANK_REQUIRED`.",
+            "maxLength": 100,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 140,
+            "type": "string"
+          },
+          "key_type": {
+            "description": "The key type. Send it when the key can be a CPF and a phone (`AMBIGUOUS_PIX_KEY`).",
+            "enum": [
+              "phone",
+              "cpf",
+              "cnpj",
+              "email",
+              "evp"
+            ],
+            "type": "string"
+          },
+          "link_device": {
+            "default": false,
+            "description": "Link the bank again before the payment, on the device that opens `start_url`. A bank link (its passkey) belongs to the device that created it, and a bank can be linked on several devices. Send `true` to confirm on a device that is not linked yet; `bank.linked` is then `false` and `start_url` opens the bank page first.",
+            "type": "boolean"
+          },
+          "pix_key": {
+            "description": "The Pix key as the user typed it: an email, a CPF, a CNPJ, a phone (with or without +55), or a random key (EVP).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pix_key",
+          "amount"
+        ],
+        "title": "PixPaymentCreateRequest",
         "type": "object"
       },
       "Space": {
@@ -1656,7 +2157,8 @@
             "refreshUrl": "https://dashboard.visorfinance.app/oauth/token",
             "scopes": {
               "pfm:read": "Read financial data",
-              "pfm:transactions:write": "Create, edit, and delete transactions"
+              "pfm:transactions:write": "Create, edit, and delete transactions",
+              "pix:payments:write": "Start Pix payments that you confirm with biometrics at your bank"
             },
             "tokenUrl": "https://dashboard.visorfinance.app/oauth/token"
           }
@@ -2124,6 +2626,604 @@
         "summary": "List notifications",
         "tags": [
           "Notifications"
+        ]
+      }
+    },
+    "/v1/pix-payments": {
+      "post": {
+        "callbacks": {},
+        "description": "Starts a Pix to one Pix key and returns it with a `start_url`. Open `start_url` in the browser: the first Pix from a bank opens the bank page to authorize Visor, then every Pix opens the page where the user confirms with biometrics. Nothing is paid until the user confirms there. Requires the `pix:payments:write` scope (Visor CLI login), the Premium plan, and an `Idempotency-Key` header. A retry with the same key and the same Pix returns the Pix already started, with `idempotent-replayed: true`; the same key with another key, amount, or description returns `409 IDEMPOTENCY_CONFLICT`. Read `GET /v1/pix-payments/{pix_payment_id}` until `status` is final.",
+        "operationId": "VisorWeb.Api.V1.PixPaymentController.create",
+        "parameters": [
+          {
+            "description": "A value you choose for this Pix, 1 to 128 letters, digits, or `-` `_` `.` `:`. Send the same value when you retry. A UUID per Pix works well.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_\\-.:]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "amount": "20.00",
+                "bank": "Nubank",
+                "description": "Almoço",
+                "key_type": "cpf",
+                "pix_key": "123.456.789-09"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/PixPaymentCreateRequest"
+              }
+            }
+          },
+          "description": "The Pix to start",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": {
+                    "amount": "20.00",
+                    "bank": {
+                      "linked": true,
+                      "name": "Nubank"
+                    },
+                    "created_at": "2026-10-22T15:31:02Z",
+                    "currency": "BRL",
+                    "description": "Almoço",
+                    "end_to_end_id": null,
+                    "failure": null,
+                    "id": "7b2d5e91-3c4a-4f68-9a0b-1c2d3e4f5a6b",
+                    "paid_at": null,
+                    "pix_key_masked": "***.456.789-**",
+                    "recipient": null,
+                    "start_url": "https://dashboard.visorfinance.app/pix/payments/continue?ref=SFMyNTY.g2gDdAAAAAJ",
+                    "status": "pending",
+                    "waiting_for": "payment_confirmation"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/PixPaymentResponse"
+                }
+              }
+            },
+            "description": "The started Pix, or the one already started with the same key",
+            "headers": {
+              "idempotent-replayed": {
+                "description": "`true` when the response returns the record already created with the same Idempotency-Key",
+                "schema": {
+                  "enum": [
+                    "true",
+                    "false"
+                  ],
+                  "type": "string"
+                },
+                "style": "simple"
+              },
+              "x-ratelimit-limit": {
+                "description": "Requests allowed for this token per minute",
+                "schema": {
+                  "example": 60,
+                  "type": "integer"
+                },
+                "style": "simple"
+              },
+              "x-ratelimit-remaining": {
+                "description": "Requests left for this token in the current minute",
+                "schema": {
+                  "example": 59,
+                  "type": "integer"
+                },
+                "style": "simple"
+              },
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "code": "BAD_REQUEST",
+                      "details": {
+                        "field": "currency_code"
+                      },
+                      "message": "The request is malformed.",
+                      "request_id": "F8x2kQ9vXc1AAAAB"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The body has a field the operation does not accept, or (on create) the Idempotency-Key header is missing or malformed",
+            "headers": {
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "code": "INVALID_TOKEN",
+                      "details": {},
+                      "message": "The personal API token is not valid.",
+                      "request_id": "F8x2kQ9vXc1AAAAB"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid, expired, or revoked token",
+            "headers": {
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "details": {
+                        "required_scope": "pix:payments:write"
+                      },
+                      "message": "The personal API token does not grant this operation.",
+                      "request_id": "F8x2kQ9vXc1AAAAB"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Premium plan required, insufficient scope, or Pix not available for the account",
+            "headers": {
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "406": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The client does not accept JSON",
+            "headers": {
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "code": "IDEMPOTENCY_CONFLICT",
+                      "details": {},
+                      "message": "This Idempotency-Key was already used with a different request.",
+                      "request_id": "F8x2kQ9vXc1AAAAB"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The Idempotency-Key was used with a different Pix, or the Pix cannot start again with it",
+            "headers": {
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "code": "BANK_REQUIRED",
+                      "details": {
+                        "banks": [
+                          "Nubank",
+                          "Itaú"
+                        ]
+                      },
+                      "message": "Send the bank the Pix comes from in the bank field. See details.banks for suggestions.",
+                      "request_id": "F8x2kQ9vXc1AAAAB"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The body has invalid values, or the Pix cannot start. `code` is `VALIDATION_FAILED`, `AMBIGUOUS_PIX_KEY`, `PIX_MONTHLY_LIMIT_REACHED`, `CPF_REQUIRED`, `BANK_REQUIRED`, or `BANK_NOT_FOUND`",
+            "headers": {
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED",
+                      "details": {
+                        "retry_after_seconds": 42
+                      },
+                      "message": "Too many requests. Retry after the number of seconds in Retry-After.",
+                      "request_id": "F8x2kQ9vXc1AAAAB"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Rate limit exceeded",
+            "headers": {
+              "retry-after": {
+                "description": "Seconds until the current window ends",
+                "schema": {
+                  "example": 42,
+                  "type": "integer"
+                },
+                "style": "simple"
+              },
+              "x-ratelimit-limit": {
+                "description": "Requests allowed for this token per minute",
+                "schema": {
+                  "example": 60,
+                  "type": "integer"
+                },
+                "style": "simple"
+              },
+              "x-ratelimit-remaining": {
+                "description": "Requests left for this token in the current minute",
+                "schema": {
+                  "example": 59,
+                  "type": "integer"
+                },
+                "style": "simple"
+              },
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "visor_cli_oauth": [
+              "pix:payments:write"
+            ]
+          }
+        ],
+        "summary": "Start a Pix payment",
+        "tags": [
+          "Pix payments"
+        ]
+      }
+    },
+    "/v1/pix-payments/{pix_payment_id}": {
+      "get": {
+        "callbacks": {},
+        "description": "Returns the status of a Pix you started. Poll it every few seconds until `status` is `completed`, `failed`, `canceled`, or `expired`. While it is `pending`, `start_url` opens the page the user needs next. Requires the `pix:payments:write` scope (Visor CLI login).",
+        "operationId": "VisorWeb.Api.V1.PixPaymentController.show",
+        "parameters": [
+          {
+            "description": "A Pix payment `id` from `POST /v1/pix-payments`",
+            "in": "path",
+            "name": "pix_payment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": {
+                    "amount": "20.00",
+                    "bank": {
+                      "linked": true,
+                      "name": "Nubank"
+                    },
+                    "created_at": "2026-10-22T15:31:02Z",
+                    "currency": "BRL",
+                    "description": "Almoço",
+                    "end_to_end_id": "E60746948202610221531abcdef123456",
+                    "failure": null,
+                    "id": "7b2d5e91-3c4a-4f68-9a0b-1c2d3e4f5a6b",
+                    "paid_at": "2026-10-22T15:32:40Z",
+                    "pix_key_masked": "***.456.789-**",
+                    "recipient": "Maria da Silva",
+                    "start_url": null,
+                    "status": "completed",
+                    "waiting_for": null
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/PixPaymentResponse"
+                }
+              }
+            },
+            "description": "The Pix payment",
+            "headers": {
+              "x-ratelimit-limit": {
+                "description": "Requests allowed for this token per minute",
+                "schema": {
+                  "example": 60,
+                  "type": "integer"
+                },
+                "style": "simple"
+              },
+              "x-ratelimit-remaining": {
+                "description": "Requests left for this token in the current minute",
+                "schema": {
+                  "example": 59,
+                  "type": "integer"
+                },
+                "style": "simple"
+              },
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "code": "INVALID_TOKEN",
+                      "details": {},
+                      "message": "The personal API token is not valid.",
+                      "request_id": "F8x2kQ9vXc1AAAAB"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid, expired, or revoked token",
+            "headers": {
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "details": {
+                        "required_scope": "pix:payments:write"
+                      },
+                      "message": "The personal API token does not grant this operation.",
+                      "request_id": "F8x2kQ9vXc1AAAAB"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Premium plan required, insufficient scope, or Pix not available for the account",
+            "headers": {
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "code": "NOT_FOUND",
+                      "details": {},
+                      "message": "The resource does not exist.",
+                      "request_id": "F8x2kQ9vXc1AAAAB"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The Pix payment does not exist, or the token's user cannot access it",
+            "headers": {
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "406": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The client does not accept JSON",
+            "headers": {
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED",
+                      "details": {
+                        "retry_after_seconds": 42
+                      },
+                      "message": "Too many requests. Retry after the number of seconds in Retry-After.",
+                      "request_id": "F8x2kQ9vXc1AAAAB"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Rate limit exceeded",
+            "headers": {
+              "retry-after": {
+                "description": "Seconds until the current window ends",
+                "schema": {
+                  "example": 42,
+                  "type": "integer"
+                },
+                "style": "simple"
+              },
+              "x-ratelimit-limit": {
+                "description": "Requests allowed for this token per minute",
+                "schema": {
+                  "example": 60,
+                  "type": "integer"
+                },
+                "style": "simple"
+              },
+              "x-ratelimit-remaining": {
+                "description": "Requests left for this token in the current minute",
+                "schema": {
+                  "example": 59,
+                  "type": "integer"
+                },
+                "style": "simple"
+              },
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "visor_cli_oauth": [
+              "pix:payments:write"
+            ]
+          }
+        ],
+        "summary": "Get a Pix payment",
+        "tags": [
+          "Pix payments"
         ]
       }
     },
@@ -5918,7 +7018,7 @@
             "description": "The created transaction, or the one already recorded with the same key",
             "headers": {
               "idempotent-replayed": {
-                "description": "`true` when the response returns the transaction already recorded with the same Idempotency-Key",
+                "description": "`true` when the response returns the record already created with the same Idempotency-Key",
                 "schema": {
                   "enum": [
                     "true",
@@ -6100,7 +7200,7 @@
                     {
                       "code": "IDEMPOTENCY_CONFLICT",
                       "details": {},
-                      "message": "This Idempotency-Key was already used with a different transaction.",
+                      "message": "This Idempotency-Key was already used with a different request.",
                       "request_id": "F8x2kQ9vXc1AAAAB"
                     }
                   ]
@@ -6214,6 +7314,284 @@
           }
         },
         "summary": "Create a transaction",
+        "tags": [
+          "Transactions"
+        ]
+      }
+    },
+    "/v1/spaces/{space_id}/transactions/batch": {
+      "post": {
+        "callbacks": {},
+        "description": "Records 1 to 100 manual transactions independently. Requires the `pfm:transactions:write` scope. Each row has the single-create fields and an `idempotency_key` with the same rules as the single-create header. The response preserves input order and uses zero-based indexes. A failed row does not undo successful rows. Retrying a successful row returns `replayed`; a changed body for its key returns `IDEMPOTENCY_CONFLICT`. The batch counts as one request.",
+        "operationId": "VisorWeb.Api.V1.TransactionController.batch",
+        "parameters": [
+          {
+            "description": "A space `id` from `GET /v1/spaces`",
+            "in": "path",
+            "name": "space_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "transactions": [
+                  {
+                    "account_id": "5d3a9c1e-2b4f-4e6a-8c7d-1f0e9b2a3c45",
+                    "amount": "42.90",
+                    "category_id": "3e9a1b7c-4d2f-4a8e-9b6c-0d1e2f3a4b5c",
+                    "description": "Padaria",
+                    "idempotency_key": "import-row-1",
+                    "transacted_at": "2026-10-01T15:30:00-03:00",
+                    "type": "debit"
+                  }
+                ]
+              },
+              "schema": {
+                "$ref": "#/components/schemas/TransactionBatchCreateRequest"
+              }
+            }
+          },
+          "description": "The transactions to record",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionBatchResponse"
+                }
+              }
+            },
+            "description": "The ordered result of each row",
+            "headers": {
+              "x-ratelimit-limit": {
+                "description": "Requests allowed for this token per minute",
+                "schema": {
+                  "example": 60,
+                  "type": "integer"
+                },
+                "style": "simple"
+              },
+              "x-ratelimit-remaining": {
+                "description": "Requests left for this token in the current minute",
+                "schema": {
+                  "example": 59,
+                  "type": "integer"
+                },
+                "style": "simple"
+              },
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "code": "BAD_REQUEST",
+                      "details": {
+                        "parameter": "include_hidden"
+                      },
+                      "message": "The request is malformed.",
+                      "request_id": "F8x2kQ9vXc1AAAAB"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A query parameter has an invalid value",
+            "headers": {
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "code": "INVALID_TOKEN",
+                      "details": {},
+                      "message": "The personal API token is not valid.",
+                      "request_id": "F8x2kQ9vXc1AAAAB"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid, expired, or revoked token",
+            "headers": {
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "code": "INSUFFICIENT_SCOPE",
+                      "details": {
+                        "required_scope": "pfm:transactions:write"
+                      },
+                      "message": "The personal API token does not grant this operation.",
+                      "request_id": "F8x2kQ9vXc1AAAAB"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Pro or Premium plan required, or insufficient scope",
+            "headers": {
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "code": "NOT_FOUND",
+                      "details": {},
+                      "message": "The resource does not exist.",
+                      "request_id": "F8x2kQ9vXc1AAAAB"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The space does not exist or the token's user cannot access it",
+            "headers": {
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "406": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The client does not accept JSON",
+            "headers": {
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED",
+                      "details": {
+                        "retry_after_seconds": 42
+                      },
+                      "message": "Too many requests. Retry after the number of seconds in Retry-After.",
+                      "request_id": "F8x2kQ9vXc1AAAAB"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Rate limit exceeded",
+            "headers": {
+              "retry-after": {
+                "description": "Seconds until the current window ends",
+                "schema": {
+                  "example": 42,
+                  "type": "integer"
+                },
+                "style": "simple"
+              },
+              "x-ratelimit-limit": {
+                "description": "Requests allowed for this token per minute",
+                "schema": {
+                  "example": 60,
+                  "type": "integer"
+                },
+                "style": "simple"
+              },
+              "x-ratelimit-remaining": {
+                "description": "Requests left for this token in the current minute",
+                "schema": {
+                  "example": 59,
+                  "type": "integer"
+                },
+                "style": "simple"
+              },
+              "x-request-id": {
+                "description": "Request identifier, also returned as `request_id` in errors",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          }
+        },
+        "summary": "Create transactions in a batch",
         "tags": [
           "Transactions"
         ]

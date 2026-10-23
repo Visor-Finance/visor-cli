@@ -248,3 +248,45 @@ pub struct OverviewUpcomingBill {
     pub due_date: String,
     pub amount_is_estimate: bool,
 }
+
+/// A Pix started through the API. It is user-level, not space-level.
+#[derive(Debug, Clone, Deserialize)]
+pub struct PixPayment {
+    pub id: String,
+    pub status: String,
+    pub waiting_for: Option<String>,
+    pub amount: String,
+    pub currency: String,
+    pub pix_key_masked: String,
+    pub recipient: Option<String>,
+    pub description: Option<String>,
+    pub bank: Option<PixPaymentBank>,
+    pub start_url: Option<String>,
+    pub end_to_end_id: Option<String>,
+    pub failure: Option<PixPaymentFailure>,
+    pub created_at: String,
+    pub paid_at: Option<String>,
+}
+
+impl PixPayment {
+    /// `completed`, `failed`, `canceled`, and `expired` never change again.
+    #[must_use]
+    pub fn is_final(&self) -> bool {
+        matches!(
+            self.status.as_str(),
+            "completed" | "failed" | "canceled" | "expired"
+        )
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct PixPaymentBank {
+    pub name: String,
+    pub linked: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct PixPaymentFailure {
+    pub code: String,
+    pub message: String,
+}

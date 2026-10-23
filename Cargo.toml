@@ -21,9 +21,11 @@ chrono = { version = "0.4.45", default-features = false, features = ["clock", "s
 clap = { version = "4.6.7", features = ["derive", "env", "wrap_help"] }
 clap_complete = "4.6.11"
 comfy-table = "8.0.1"
+crossterm = { version = "0.29.0", default-features = false, features = ["events"] }
 dirs = "7.0.0"
 getrandom = "0.4.3"
 keyring = "4.2.0"
+qrcode = { version = "0.14.1", default-features = false }
 reqwest = { version = "0.13.5", default-features = false, features = ["blocking", "form", "gzip", "json", "query", "rustls", "system-proxy"] }
 rpassword = "7.5.4"
 serde = { version = "1.0.229", features = ["derive"] }

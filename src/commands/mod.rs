@@ -3,6 +3,7 @@
 
 mod auth;
 mod doctor;
+mod pix;
 mod resources;
 pub(crate) mod status;
 mod transactions;
@@ -72,7 +73,7 @@ pub fn run(cli: Cli) -> Result<()> {
     };
 
     crate::activity::start("Loading…");
-    let ctx = Context::new(
+    let mut ctx = Context::new(
         &cli.global.api_url,
         &cli.global.auth_url,
         cli.global.space,
@@ -94,6 +95,7 @@ pub fn run(cli: Cli) -> Result<()> {
         Command::Connections(command) => resources::connections(&ctx, command),
         Command::Overview => resources::overview(&ctx),
         Command::Notifications(command) => resources::notifications(&ctx, command),
+        Command::Pix(args) => pix::run(&mut ctx, args),
         Command::Auth(_)
         | Command::Whoami
         | Command::Doctor
@@ -111,6 +113,10 @@ pub struct Context {
     pub config_dir: PathBuf,
     pub config: Config,
     space: Option<String>,
+    api_url: String,
+    auth_url: String,
+    credential: Credential,
+    source: Source,
 }
 
 impl Context {
@@ -121,12 +127,24 @@ impl Context {
         let (credential, source) = credentials::resolve(&store)?.ok_or(Error::NotLoggedIn)?;
 
         Ok(Self {
-            client: client_for(api_url, auth_url, credential, &source)?,
+            client: client_for(api_url, auth_url, credential.clone(), &source)?,
             format,
             config_dir,
             config,
             space: space.filter(|space| !space.trim().is_empty()),
+            api_url: api_url.to_owned(),
+            auth_url: auth_url.to_owned(),
+            credential,
+            source,
         })
+    }
+
+    /// Switches to a new login, such as one with more access, for the rest
+    /// of the command.
+    fn use_credential(&mut self, credential: Credential) -> Result<()> {
+        self.client = client_for(&self.api_url, &self.auth_url, credential.clone(), &self.source)?;
+        self.credential = credential;
+        Ok(())
     }
 
     /// The space to act on: `--space`, then `visor spaces use`, then the

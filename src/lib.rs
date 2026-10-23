@@ -19,5 +19,6 @@ pub mod input;
 pub mod models;
 pub mod oauth;
 pub mod output;
+pub mod picker;
 pub mod resolve;
 pub mod update;
