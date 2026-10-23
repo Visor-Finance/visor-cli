@@ -64,6 +64,12 @@ impl Paint {
         Self::when(io::stderr().is_terminal())
     }
 
+    /// No styling, for tests.
+    #[must_use]
+    pub fn plain() -> Self {
+        Self { on: false }
+    }
+
     fn when(is_terminal: bool) -> Self {
         Self {
             on: crate::banner::Palette::detect(is_terminal) != crate::banner::Palette::None,
@@ -86,6 +92,18 @@ impl Paint {
     #[must_use]
     pub fn dim(self, text: &str) -> String {
         self.wrap("2", text)
+    }
+
+    /// An answer the user picked.
+    #[must_use]
+    pub fn accent(self, text: &str) -> String {
+        self.wrap("36", text)
+    }
+
+    /// The highlighted option of a picker.
+    #[must_use]
+    pub fn highlight(self, text: &str) -> String {
+        self.wrap("1;36", text)
     }
 
     #[must_use]

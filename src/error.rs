@@ -54,6 +54,10 @@ pub enum Error {
     #[error("unexpected response from the Visor API: {0}")]
     Decode(String),
 
+    /// The user canceled a question with Esc or Ctrl+C.
+    #[error("canceled")]
+    Canceled,
+
     /// A Pix that ended without being paid: `failed`, `canceled`, or `expired`.
     #[error("{message}")]
     PixNotPaid { status: String, message: String },
@@ -92,7 +96,8 @@ impl Error {
             | Self::Io { .. }
             | Self::Decode(_)
             | Self::ChecksFailed(_)
-            | Self::PixWaitTimeout { .. } => exit::FAILURE,
+            | Self::PixWaitTimeout { .. }
+            | Self::Canceled => exit::FAILURE,
         }
     }
 
@@ -113,6 +118,7 @@ impl Error {
             Self::Decode(_) => "UNEXPECTED_RESPONSE".to_owned(),
             Self::PixNotPaid { status, .. } => format!("PIX_{}", status.to_uppercase()),
             Self::PixWaitTimeout { .. } => "PIX_WAIT_TIMEOUT".to_owned(),
+            Self::Canceled => "CANCELED".to_owned(),
         };
         let mut error = serde_json::json!({
             "code": code,

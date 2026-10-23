@@ -17,6 +17,7 @@ use crate::error::{Error, PIX_SCOPE, Result, TOKENS_URL};
 use crate::models::PixPayment;
 use crate::oauth;
 use crate::output::{self, Paint};
+use crate::picker::{self, Choice};
 
 /// The API allows 60 requests a minute; one every 5 s leaves room for the rest.
 const POLL_INTERVAL: Duration = Duration::from_secs(5);
@@ -143,14 +144,20 @@ fn summary(pix: &PixPayment) -> String {
 /// linked yet: linking happens in the bank's app.
 fn ask_device(pix: &PixPayment) -> Result<Device> {
     let mut options = [
-        (Device::Phone, "On your phone (QR code)"),
-        (Device::Computer, "On this computer (opens the browser)"),
+        (
+            Device::Phone,
+            Choice::new("On your phone").detail("Shows a QR code; scan it with the phone's camera."),
+        ),
+        (
+            Device::Computer,
+            Choice::new("On this computer").detail("Opens the page in your browser here."),
+        ),
     ];
     if pix.bank.as_ref().is_some_and(|bank| bank.linked) {
         options.reverse();
     }
-    let labels: Vec<String> = options.iter().map(|(_, label)| (*label).to_owned()).collect();
-    let picked = super::choose("Where do you want to confirm the Pix?", &labels)?;
+    let choices: Vec<Choice> = options.iter().map(|(_, choice)| choice.clone()).collect();
+    let picked = picker::choose("Where do you want to confirm the Pix?", &choices)?;
     Ok(options[picked].0)
 }
 
@@ -202,8 +209,11 @@ fn pick_missing(ctx: &Context, error: &Error, body: &Value) -> Result<Option<(&'
     if options.is_empty() {
         return Ok(None);
     }
-    let labels: Vec<String> = options.iter().map(|(label, _)| label.clone()).collect();
-    let picked = super::choose(&question, &labels)?;
+    let choices: Vec<Choice> = options
+        .iter()
+        .map(|(label, _)| Choice::new(label.clone()))
+        .collect();
+    let picked = picker::choose(&question, &choices)?;
     Ok(Some((field, options[picked].1.clone())))
 }
 
