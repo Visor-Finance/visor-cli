@@ -2497,7 +2497,7 @@ _visor() {
             return 0
             ;;
         visor__subcmd__pix)
-            opts="-d -s -h --description --bank --key-type --qr --open --no-wait --idempotency-key --json --space --debug --api-url --auth-url --help status help"
+            opts="-d -s -h --description --bank --key-type --qr --open --no-wait --link-device --idempotency-key --json --space --debug --api-url --auth-url --help status help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

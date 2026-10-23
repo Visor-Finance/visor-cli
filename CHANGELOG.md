@@ -10,6 +10,7 @@ people who use the CLI: what they can do now, what changed, what to watch for.
 - On a terminal, when Visor needs a choice, `visor pix` asks for it and goes on: which of your banks the Pix comes from, or whether a key is a CPF or a phone. In a script, the error lists the options for `--bank` or `--key-type`.
 - The first `visor pix` opens the browser so you can allow Pix, then swaps the stored login for the new one and ends the old one. You do not log in again.
 - A Pix that fails, is canceled, or expires exits with code 5 and says why. Pix errors say what to do next: the banks you can pass to `--bank`, `--key-type cpf|phone` for a key that can be either, and the monthly limit with its renewal date.
+- `visor pix --link-device` links the bank again on the device you confirm with. A bank link (its passkey) lives on the device that made it, so another device showed "Dispositivo não reconhecido". The device question now starts on the phone and says where the bank is linked.
 - Questions on a terminal use a picker: ↑ ↓ to choose, Enter to confirm, Esc to cancel, with a line on what each option does. Without a real terminal, the CLI asks for the number instead.
 - `BROWSER` picks the command that opens URLs, and `VISOR_FORCE_TTY=1` lets a wrapper answer prompts.
 

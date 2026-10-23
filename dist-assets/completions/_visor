@@ -1473,6 +1473,7 @@ evp\:"A random key"))' \
 '(--open)--qr[Confirm on your phone\: show a QR code of the confirmation page]' \
 '--open[Confirm on this computer\: open the confirmation page in the browser]' \
 '--no-wait[Print the Pix ID and the link without waiting for the Pix to finish]' \
+'--link-device[Link the bank again on the device you confirm with, for one that says "Dispositivo não reconhecido"]' \
 '--json[Print the API response body as JSON instead of a table]' \
 '--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
 '-h[Print help (see more with '\''--help'\'')]' \

@@ -166,7 +166,14 @@ fn every_model_decodes_the_minimal_object_of_its_schema() {
 fn pix_bodies_only_use_fields_the_spec_accepts() {
     let spec = spec();
     let schema = &spec["components"]["schemas"]["PixPaymentCreateRequest"];
-    for field in ["pix_key", "amount", "description", "bank", "key_type"] {
+    for field in [
+        "pix_key",
+        "amount",
+        "description",
+        "bank",
+        "key_type",
+        "link_device",
+    ] {
         assert!(
             schema["properties"][field].is_object(),
             "PixPaymentCreateRequest no longer accepts {field}"

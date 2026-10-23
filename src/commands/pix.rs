@@ -59,6 +59,9 @@ fn send(ctx: &mut Context, args: PixSendArgs) -> Result<()> {
     if let Some(key_type) = args.key_type {
         fields.insert("key_type".into(), key_type.as_str().into());
     }
+    if args.link_device {
+        fields.insert("link_device".into(), true.into());
+    }
     let idempotency_key = args
         .idempotency_key
         .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
@@ -140,10 +143,11 @@ fn summary(pix: &PixPayment) -> String {
     text
 }
 
-/// Asks where to confirm. The phone comes first while the bank is not
-/// linked yet: linking happens in the bank's app.
+/// Asks where to confirm.
 fn ask_device(pix: &PixPayment) -> Result<Device> {
-    let mut options = [
+    // The phone comes first: banks are usually linked there, and the passkey
+    // stays on the device that linked the bank.
+    let options = [
         (
             Device::Phone,
             Choice::new("On your phone").detail("Shows a QR code; scan it with the phone's camera."),
@@ -153,8 +157,12 @@ fn ask_device(pix: &PixPayment) -> Result<Device> {
             Choice::new("On this computer").detail("Opens the page in your browser here."),
         ),
     ];
-    if pix.bank.as_ref().is_some_and(|bank| bank.linked) {
-        options.reverse();
+    if let Some(bank) = pix.bank.as_ref().filter(|bank| bank.linked) {
+        output::note(&Paint::stderr().dim(&format!(
+            "\nConfirm on the device where you linked {}. Another device says \"Dispositivo não \
+             reconhecido\"; to use it, run again with --link-device.",
+            bank.name
+        )));
     }
     let choices: Vec<Choice> = options.iter().map(|(_, choice)| choice.clone()).collect();
     let picked = picker::choose("Where do you want to confirm the Pix?", &choices)?;

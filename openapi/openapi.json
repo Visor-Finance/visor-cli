@@ -1968,6 +1968,11 @@
             ],
             "type": "string"
           },
+          "link_device": {
+            "default": false,
+            "description": "Link the bank again before the payment, on the device that opens `start_url`. A bank link (its passkey) belongs to the device that created it, and a bank can be linked on several devices. Send `true` to confirm on a device that is not linked yet; `bank.linked` is then `false` and `start_url` opens the bank page first.",
+            "type": "boolean"
+          },
           "pix_key": {
             "description": "The Pix key as the user typed it: an email, a CPF, a CNPJ, a phone (with or without +55), or a random key (EVP).",
             "type": "string"

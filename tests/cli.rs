@@ -1163,7 +1163,7 @@ fn pix_asks_where_to_confirm_on_a_terminal() {
     harness.start_pix(&json!({"pix_key": "maria@example.com", "amount": "20.00"}));
     harness.get(&format!("/v1/pix-payments/{PIX}"), &pix("completed"));
 
-    // The bank is linked, so this computer is the default answer.
+    // The phone is the default answer; the bank is linked, so the CLI says where.
     harness
         .visor()
         .args(["pix", "maria@example.com", "20"])
@@ -1172,8 +1172,11 @@ fn pix_asks_where_to_confirm_on_a_terminal() {
         .assert()
         .success()
         .stderr(predicate::str::contains("Where do you want to confirm the Pix?"))
-        .stderr(predicate::str::contains("1 On this computer"))
-        .stderr(predicate::str::contains("Opening the Pix page in your browser"));
+        .stderr(predicate::str::contains("1 On your phone"))
+        .stderr(predicate::str::contains(
+            "Confirm on the device where you linked Nubank",
+        ))
+        .stderr(predicate::str::contains("Scan this code"));
 }
 
 #[test]
@@ -1363,4 +1366,18 @@ fn pix_asks_whether_an_ambiguous_key_is_a_cpf_or_a_phone() {
         ))
         .stdout(predicate::str::contains(START_URL));
     started.assert();
+}
+
+#[test]
+fn pix_link_device_asks_the_api_to_link_the_bank_again() {
+    let mut harness = Harness::new();
+    let start =
+        harness.start_pix(&json!({"pix_key": "maria@example.com", "amount": "20.00", "link_device": true}));
+
+    harness
+        .visor()
+        .args(["pix", "maria@example.com", "20", "--link-device", "--no-wait"])
+        .assert()
+        .success();
+    start.assert();
 }

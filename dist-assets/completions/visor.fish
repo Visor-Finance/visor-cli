@@ -647,6 +647,7 @@ complete -c visor -n "__fish_visor_using_subcommand pix; and not __fish_seen_sub
 complete -c visor -n "__fish_visor_using_subcommand pix; and not __fish_seen_subcommand_from status help" -l qr -d 'Confirm on your phone: show a QR code of the confirmation page'
 complete -c visor -n "__fish_visor_using_subcommand pix; and not __fish_seen_subcommand_from status help" -l open -d 'Confirm on this computer: open the confirmation page in the browser'
 complete -c visor -n "__fish_visor_using_subcommand pix; and not __fish_seen_subcommand_from status help" -l no-wait -d 'Print the Pix ID and the link without waiting for the Pix to finish'
+complete -c visor -n "__fish_visor_using_subcommand pix; and not __fish_seen_subcommand_from status help" -l link-device -d 'Link the bank again on the device you confirm with, for one that says "Dispositivo não reconhecido"'
 complete -c visor -n "__fish_visor_using_subcommand pix; and not __fish_seen_subcommand_from status help" -l json -d 'Print the API response body as JSON instead of a table'
 complete -c visor -n "__fish_visor_using_subcommand pix; and not __fish_seen_subcommand_from status help" -l debug -d 'Print each HTTP request (method, URL, status, time, request ID) on standard error'
 complete -c visor -n "__fish_visor_using_subcommand pix; and not __fish_seen_subcommand_from status help" -s h -l help -d 'Print help (see more with \'--help\')'

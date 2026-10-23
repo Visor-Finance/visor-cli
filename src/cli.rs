@@ -290,6 +290,10 @@ asks where: on this computer it opens the confirmation page, on your phone it
 shows a QR code of that page. The first Pix from a bank links the bank first.
 Then the CLI waits until the Pix is paid, fails, or expires.
 
+A bank link lives on the device that made it. To confirm on another device
+(the bank page says \"Dispositivo não reconhecido\"), pass --link-device: that
+device links the bank first, then confirms.
+
 Pix through the CLI needs the Premium plan and the browser login (`visor auth
 login`). The first time, the CLI opens the browser so you can allow Pix.
 
@@ -297,6 +301,7 @@ Examples:
   visor pix maria@example.com 20,00 -d Almoço
   visor pix 11987654321 50 --key-type phone --bank Nubank
   visor pix 123.456.789-09 20 --qr
+  visor pix maria@example.com 20 --open --link-device
   visor pix maria@example.com 20 --no-wait --json
   visor pix status 7b2d5e91-3c4a-4f68-9a0b-1c2d3e4f5a6b";
 
@@ -319,6 +324,8 @@ pub enum PixCommand {
     },
 }
 
+// Each bool is a flag of its own.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Args)]
 pub struct PixSendArgs {
     /// Pix key: email, CPF, CNPJ, phone (with or without +55), or random key
@@ -352,6 +359,11 @@ pub struct PixSendArgs {
     /// Print the Pix ID and the link without waiting for the Pix to finish
     #[arg(long)]
     pub no_wait: bool,
+
+    /// Link the bank again on the device you confirm with, for one that
+    /// says "Dispositivo não reconhecido"
+    #[arg(long)]
+    pub link_device: bool,
 
     /// Reuse a key to retry without starting a second Pix [default: a new UUID]
     #[arg(long, value_parser = input::idempotency_key)]
