@@ -31,6 +31,22 @@ pub struct Cli {
     pub command: Option<Command>,
 }
 
+const UPDATE_HELP: &str = "\
+Examples:
+  visor update
+  visor update --check        # exit code 1 when a new version is out
+
+A Homebrew install runs `brew upgrade visor-finance/tap/visor`; an install
+from the shell or PowerShell installer runs that release's installer into the
+same directory. A `cargo install` prints the command to run instead.";
+
+#[derive(Debug, Args)]
+pub struct UpdateArgs {
+    /// Only compare this version with the latest release; exit with code 1 when it is older
+    #[arg(long)]
+    pub check: bool,
+}
+
 #[derive(Debug, Args)]
 pub struct Global {
     /// Print the API response body as JSON instead of a table
@@ -65,6 +81,10 @@ pub enum Command {
 
     /// Check the CLI version, the login, and the connection to Visor
     Doctor,
+
+    /// Update the CLI the way it was installed: Homebrew or the installer
+    #[command(after_help = UPDATE_HELP)]
+    Update(UpdateArgs),
 
     /// Open Visor in the browser: the dashboard or a page of it
     #[command(after_help = "Examples:\n  visor open\n  visor open transactions\n  visor open tokens --print")]

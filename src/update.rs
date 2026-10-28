@@ -1,5 +1,6 @@
 //! The new-version notice, like `gh`: at most one check a day, run beside
-//! the command so it never slows it down, and shown only to a person.
+//! the command so it never slows it down, and shown only to a person. Also
+//! how this binary was installed, which `visor update` follows.
 
 use std::io::IsTerminal;
 use std::path::{Path, PathBuf};
@@ -14,7 +15,11 @@ use crate::config::write_atomically;
 use crate::output::Paint;
 
 const RELEASES_URL: &str = "https://api.github.com/repos/Visor-Finance/visor-cli/releases/latest";
-pub const UPGRADE: &str = "brew upgrade visor-finance/tap/visor, or run the installer again";
+const DOWNLOAD_URL: &str = "https://github.com/Visor-Finance/visor-cli/releases/download";
+pub const UPGRADE: &str = "run `visor update`";
+pub const FORMULA: &str = "visor-finance/tap/visor";
+pub const CARGO_INSTALL: &str =
+    "cargo install --git https://github.com/Visor-Finance/visor-cli --locked --force";
 const CACHE_FILE: &str = "update-check.json";
 const CHECK_EVERY_SECONDS: i64 = 24 * 60 * 60;
 
@@ -44,6 +49,101 @@ pub fn latest_release(timeout: Duration) -> Option<String> {
         .json()
         .ok()?;
     Some(release.tag_name.trim_start_matches('v').to_owned())
+}
+
+/// The URL of the installer script of release `version`, for this platform.
+#[must_use]
+pub fn installer_url(version: &str) -> String {
+    let base = std::env::var("VISOR_RELEASE_DOWNLOAD_URL").unwrap_or_else(|_| DOWNLOAD_URL.to_owned());
+    let extension = if cfg!(windows) { "ps1" } else { "sh" };
+    format!("{base}/v{version}/visor-installer.{extension}")
+}
+
+/// The page of release `version`.
+#[must_use]
+pub fn release_page(version: &str) -> String {
+    format!("https://github.com/Visor-Finance/visor-cli/releases/tag/v{version}")
+}
+
+/// How this binary was installed, which decides how `visor update`
+/// replaces it. Without an install receipt (dist writes one only with its
+/// updater), the binary's location tells.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Install {
+    /// `<prefix>/Cellar/visor/<version>/bin/visor`: the `brew` of that prefix upgrades it.
+    Homebrew { brew: PathBuf },
+    /// The shell or PowerShell installer put it in `dir` (`$CARGO_HOME/bin`).
+    Installer { dir: PathBuf },
+    /// `cargo install`, which records it in `$CARGO_HOME/.crates2.json`.
+    Cargo,
+    /// A build or a package the CLI does not know how to replace.
+    Unknown { path: PathBuf },
+}
+
+impl Install {
+    /// Where the running binary came from.
+    #[must_use]
+    pub fn detect() -> Self {
+        let Ok(exe) = std::env::current_exe() else {
+            return Self::Unknown {
+                path: PathBuf::from("visor"),
+            };
+        };
+        let exe = exe.canonicalize().unwrap_or(exe);
+        let cargo_home = std::env::var_os("CARGO_HOME")
+            .filter(|home| !home.is_empty())
+            .map(PathBuf::from)
+            .or_else(|| dirs::home_dir().map(|home| home.join(".cargo")));
+        detect_at(&exe, cargo_home.as_deref())
+    }
+
+    /// A stable name for `--json` and the messages.
+    #[must_use]
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Homebrew { .. } => "homebrew",
+            Self::Installer { .. } => "installer",
+            Self::Cargo => "cargo",
+            Self::Unknown { .. } => "unknown",
+        }
+    }
+}
+
+fn detect_at(exe: &Path, cargo_home: Option<&Path>) -> Install {
+    let is = |path: &Path, name: &str| path.file_name().is_some_and(|file| file == name);
+    for dir in exe.ancestors() {
+        if is(dir, "visor")
+            && let Some(cellar) = dir.parent().filter(|cellar| is(cellar, "Cellar"))
+            && let Some(prefix) = cellar.parent()
+        {
+            return Install::Homebrew {
+                brew: prefix.join("bin").join("brew"),
+            };
+        }
+    }
+    if let (Some(dir), Some(home)) = (exe.parent(), cargo_home) {
+        let bin = home.join("bin");
+        if dir == bin || bin.canonicalize().is_ok_and(|bin| dir == bin) {
+            return if installed_by_cargo(home) {
+                Install::Cargo
+            } else {
+                Install::Installer { dir: dir.to_owned() }
+            };
+        }
+    }
+    Install::Unknown { path: exe.to_owned() }
+}
+
+/// True when cargo's install list has the `visor` package.
+fn installed_by_cargo(cargo_home: &Path) -> bool {
+    let Ok(text) = std::fs::read_to_string(cargo_home.join(".crates2.json")) else {
+        return false;
+    };
+    serde_json::from_str::<serde_json::Value>(&text).is_ok_and(|list| {
+        list["installs"]
+            .as_object()
+            .is_some_and(|installs| installs.keys().any(|key| key.starts_with("visor ")))
+    })
 }
 
 /// True when the dotted version `a` is newer than `b`.
@@ -114,9 +214,10 @@ fn notice(latest: &str) -> Option<String> {
     newer(latest, current).then(|| {
         let paint = Paint::stderr();
         format!(
-            "{} visor {} is out (you have {current}). Upgrade: {UPGRADE}\n  What changed: https://github.com/Visor-Finance/visor-cli/releases/tag/v{latest}",
+            "{} visor {} is out (you have {current}). Upgrade: {UPGRADE}\n  What changed: {}",
             paint.warn(),
-            paint.bold(latest)
+            paint.bold(latest),
+            release_page(latest)
         )
     })
 }
@@ -142,6 +243,48 @@ mod tests {
         let receiver = start_at(path, 1000 + 60);
 
         assert_eq!(receiver.try_recv().unwrap(), "9.9.9");
+    }
+
+    #[test]
+    fn a_cellar_binary_is_homebrew_with_the_brew_of_its_prefix() {
+        let install = detect_at(Path::new("/opt/homebrew/Cellar/visor/0.5.0/bin/visor"), None);
+
+        assert_eq!(
+            install,
+            Install::Homebrew {
+                brew: PathBuf::from("/opt/homebrew/bin/brew")
+            }
+        );
+    }
+
+    #[test]
+    fn a_binary_in_cargo_bin_is_the_installer_unless_cargo_lists_it() {
+        let home = tempfile::tempdir().unwrap();
+        let bin = home.path().join("bin");
+        std::fs::create_dir(&bin).unwrap();
+        let exe = bin.join("visor");
+
+        assert_eq!(
+            detect_at(&exe, Some(home.path())),
+            Install::Installer { dir: bin.clone() }
+        );
+
+        std::fs::write(
+            home.path().join(".crates2.json"),
+            r#"{"installs":{"visor 0.5.0 (git+https://github.com/Visor-Finance/visor-cli#677cfbb)":{}}}"#,
+        )
+        .unwrap();
+        assert_eq!(detect_at(&exe, Some(home.path())), Install::Cargo);
+    }
+
+    #[test]
+    fn any_other_binary_is_unknown() {
+        let exe = Path::new("/home/ana/visor-cli/target/release/visor");
+
+        assert_eq!(
+            detect_at(exe, Some(Path::new("/home/ana/.cargo"))),
+            Install::Unknown { path: exe.to_owned() }
+        );
     }
 
     #[test]
