@@ -5,6 +5,8 @@ people who use the CLI: what they can do now, what changed, what to watch for.
 
 ## Unreleased
 
+## 0.6.0 - 2026-10-28
+
 - `visor update` updates the CLI the way it was installed: it runs `brew upgrade visor-finance/tap/visor` for Homebrew, or the new release's installer into the same directory for the shell and PowerShell installers. A `cargo install` build prints the `cargo install` command to run. If Homebrew or the installer fails, its own error stays on screen and visor is left as it was.
 - `visor update --check` compares this version with the latest release and exits with code 1 when a new one is out; with `--json` it prints `current`, `latest`, `update_available`, and `installed_with`.
 - The new-version notice and `visor doctor` now say to run `visor update`.
