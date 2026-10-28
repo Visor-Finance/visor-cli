@@ -5,6 +5,10 @@ people who use the CLI: what they can do now, what changed, what to watch for.
 
 ## Unreleased
 
+- `visor update` updates the CLI the way it was installed: it runs `brew upgrade visor-finance/tap/visor` for Homebrew, or the new release's installer into the same directory for the shell and PowerShell installers. A `cargo install` build prints the `cargo install` command to run. If Homebrew or the installer fails, its own error stays on screen and visor is left as it was.
+- `visor update --check` compares this version with the latest release and exits with code 1 when a new one is out; with `--json` it prints `current`, `latest`, `update_available`, and `installed_with`.
+- The new-version notice and `visor doctor` now say to run `visor update`.
+
 ## 0.5.0 - 2026-10-28
 
 - `visor pix <key> <amount>` sends a Pix that you confirm with biometrics at your bank (Premium). It asks where you confirm: on this computer (it opens the page) or on your phone (it shows a QR code). Then it waits until the Pix is paid and prints its Pix ID. `--qr` and `--open` skip the question, `--no-wait` prints the Pix and its link and exits, and `--bank`, `--key-type`, and `-d` fill in the rest.

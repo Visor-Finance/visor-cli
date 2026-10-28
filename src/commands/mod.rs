@@ -7,6 +7,7 @@ mod pix;
 mod resources;
 pub(crate) mod status;
 mod transactions;
+mod update;
 
 use std::io::{self, IsTerminal};
 use std::path::PathBuf;
@@ -60,6 +61,7 @@ pub fn run(cli: Cli) -> Result<()> {
             crate::activity::start("Running checks…");
             return doctor::run(&cli.global, format);
         }
+        Command::Update(args) => return update::run(&args, format),
         Command::Open { page, print } => {
             // Like `gh browse`: print the URL when asked or when no browser opens.
             if print || !crate::browser::open(page.url()) {
@@ -99,6 +101,7 @@ pub fn run(cli: Cli) -> Result<()> {
         Command::Auth(_)
         | Command::Whoami
         | Command::Doctor
+        | Command::Update(_)
         | Command::Open { .. }
         | Command::Completions { .. } => {
             unreachable!("handled above")

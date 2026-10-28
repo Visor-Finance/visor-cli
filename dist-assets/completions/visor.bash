@@ -82,6 +82,9 @@ _visor() {
             visor,tx)
                 cmd="visor__subcmd__transactions"
                 ;;
+            visor,update)
+                cmd="visor__subcmd__update"
+                ;;
             visor,whoami)
                 cmd="visor__subcmd__whoami"
                 ;;
@@ -267,6 +270,9 @@ _visor() {
                 ;;
             visor__subcmd__help,transactions)
                 cmd="visor__subcmd__help__subcmd__transactions"
+                ;;
+            visor__subcmd__help,update)
+                cmd="visor__subcmd__help__subcmd__update"
                 ;;
             visor__subcmd__help,whoami)
                 cmd="visor__subcmd__help__subcmd__whoami"
@@ -497,7 +503,7 @@ _visor() {
 
     case "${cmd}" in
         visor)
-            opts="-s -h -V --json --space --debug --api-url --auth-url --help --version auth whoami doctor open me spaces transactions tx accounts categories tags cards subscriptions fixed-bills installments goals investments connections overview pix notifications completions help"
+            opts="-s -h -V --json --space --debug --api-url --auth-url --help --version auth whoami doctor update open me spaces transactions tx accounts categories tags cards subscriptions fixed-bills installments goals investments connections overview pix notifications completions help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1445,7 +1451,7 @@ _visor() {
             return 0
             ;;
         visor__subcmd__help)
-            opts="auth whoami doctor open me spaces transactions accounts categories tags cards subscriptions fixed-bills installments goals investments connections overview pix notifications completions help"
+            opts="auth whoami doctor update open me spaces transactions accounts categories tags cards subscriptions fixed-bills installments goals investments connections overview pix notifications completions help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2063,6 +2069,20 @@ _visor() {
         visor__subcmd__help__subcmd__transactions__subcmd__list)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        visor__subcmd__help__subcmd__update)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -3347,6 +3367,36 @@ _visor() {
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
+                --space)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -s)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --api-url)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --auth-url)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        visor__subcmd__update)
+            opts="-s -h --check --json --space --debug --api-url --auth-url --help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
                 --space)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0

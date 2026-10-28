@@ -64,6 +64,22 @@ pub enum Error {
 
     #[error("the Pix is still waiting after {minutes} minutes. Check it with `visor pix status {id}`")]
     PixWaitTimeout { id: String, minutes: u64 },
+
+    #[error(
+        "could not get the latest version from GitHub. Try again, or see https://github.com/Visor-Finance/visor-cli/releases"
+    )]
+    UpdateCheck,
+
+    /// `visor update --check` found a newer release.
+    #[error("visor {latest} is out. Run `visor update`")]
+    UpdateAvailable { latest: String },
+
+    /// The CLI cannot replace this install itself; the message says how.
+    #[error("{0}")]
+    CannotUpdate(String),
+
+    #[error("{0}")]
+    UpdateFailed(String),
 }
 
 impl Error {
@@ -88,7 +104,7 @@ impl Error {
     pub fn exit_status(&self) -> u8 {
         match self {
             Self::Api(api) => api.exit_code(),
-            Self::Network(_) => exit::UNAVAILABLE,
+            Self::Network(_) | Self::UpdateCheck => exit::UNAVAILABLE,
             Self::NotLoggedIn | Self::LoginExpired | Self::Login(_) => exit::AUTH,
             Self::Usage(_) => exit::USAGE,
             Self::PixNotPaid { .. } => exit::REJECTED,
@@ -97,7 +113,10 @@ impl Error {
             | Self::Decode(_)
             | Self::ChecksFailed(_)
             | Self::PixWaitTimeout { .. }
-            | Self::Canceled => exit::FAILURE,
+            | Self::Canceled
+            | Self::UpdateAvailable { .. }
+            | Self::CannotUpdate(_)
+            | Self::UpdateFailed(_) => exit::FAILURE,
         }
     }
 
@@ -119,6 +138,10 @@ impl Error {
             Self::PixNotPaid { status, .. } => format!("PIX_{}", status.to_uppercase()),
             Self::PixWaitTimeout { .. } => "PIX_WAIT_TIMEOUT".to_owned(),
             Self::Canceled => "CANCELED".to_owned(),
+            Self::UpdateCheck => "UPDATE_CHECK_FAILED".to_owned(),
+            Self::UpdateAvailable { .. } => "UPDATE_AVAILABLE".to_owned(),
+            Self::CannotUpdate(_) => "CANNOT_UPDATE".to_owned(),
+            Self::UpdateFailed(_) => "UPDATE_FAILED".to_owned(),
         };
         let mut error = serde_json::json!({
             "code": code,

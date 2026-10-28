@@ -1381,3 +1381,209 @@ fn pix_link_device_asks_the_api_to_link_the_bank_again() {
         .success();
     start.assert();
 }
+
+/// A release endpoint on the harness server that reports `tag`.
+fn latest_release(harness: &mut Harness, tag: &str) -> String {
+    harness
+        .server
+        .mock("GET", "/releases/latest")
+        .with_body(json!({ "tag_name": tag }).to_string())
+        .create();
+    format!("{}/releases/latest", harness.server.url())
+}
+
+/// A copy of the test binary at `relative` under `root`, so it looks
+/// installed by Homebrew or the installer.
+#[cfg(unix)]
+fn installed_copy(root: &std::path::Path, relative: &str) -> std::path::PathBuf {
+    let exe = root.join(relative);
+    std::fs::create_dir_all(exe.parent().unwrap()).unwrap();
+    std::fs::copy(assert_cmd::cargo::cargo_bin!("visor"), &exe).unwrap();
+    exe
+}
+
+#[cfg(unix)]
+fn executable(path: &std::path::Path, script: &str) {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(path, script).unwrap();
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755)).unwrap();
+}
+
+#[test]
+fn update_check_says_when_this_is_the_latest_version() {
+    let mut harness = Harness::new();
+    let releases = latest_release(&mut harness, &format!("v{}", env!("CARGO_PKG_VERSION")));
+
+    harness
+        .visor()
+        .args(["update", "--check"])
+        .env("VISOR_RELEASES_URL", releases)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("is the latest version"));
+}
+
+#[test]
+fn update_check_exits_1_with_json_when_a_new_version_is_out() {
+    let mut harness = Harness::new();
+    let releases = latest_release(&mut harness, "v99.0.0");
+
+    let output = harness
+        .visor()
+        .args(["update", "--check", "--json"])
+        .env("VISOR_RELEASES_URL", releases)
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("UPDATE_AVAILABLE"))
+        .get_output()
+        .stdout
+        .clone();
+
+    let body: Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(body["latest"], "99.0.0");
+    assert_eq!(body["update_available"], true);
+    assert_eq!(body["updated"], false);
+    assert_eq!(body["installed_with"], "unknown");
+}
+
+#[test]
+fn update_refuses_a_binary_it_did_not_install() {
+    let mut harness = Harness::new();
+    let releases = latest_release(&mut harness, "v99.0.0");
+
+    harness
+        .visor()
+        .arg("update")
+        .env("VISOR_RELEASES_URL", releases)
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("cannot replace it"))
+        .stderr(predicate::str::contains("visor-cli#install"));
+}
+
+#[test]
+fn update_fails_with_6_when_github_does_not_answer() {
+    let harness = Harness::new();
+
+    harness
+        .visor()
+        .arg("update")
+        .env("VISOR_RELEASES_URL", "http://127.0.0.1:9/unreachable")
+        .assert()
+        .code(6)
+        .stderr(predicate::str::contains("latest version from GitHub"));
+}
+
+#[cfg(unix)]
+#[test]
+fn update_runs_brew_upgrade_for_a_homebrew_install() {
+    let mut harness = Harness::new();
+    let releases = latest_release(&mut harness, "v99.0.0");
+    let prefix = TempDir::new().unwrap();
+    let exe = installed_copy(prefix.path(), "Cellar/visor/0.5.0/bin/visor");
+    let log = prefix.path().join("brew.log");
+    executable(
+        &prefix.path().join("bin/brew"),
+        &format!("#!/bin/sh\necho \"$@\" > '{}'\necho brewing\n", log.display()),
+    );
+
+    let output = Command::new(&exe)
+        .args(["update", "--json"])
+        .env("VISOR_CONFIG_DIR", harness.config.path())
+        .env("VISOR_RELEASES_URL", releases)
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("brewing"))
+        .get_output()
+        .stdout
+        .clone();
+
+    let body: Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(body["installed_with"], "homebrew");
+    assert_eq!(body["updated"], true);
+    assert_eq!(
+        std::fs::read_to_string(log).unwrap().trim(),
+        "upgrade visor-finance/tap/visor"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn update_reports_a_failed_brew_upgrade() {
+    let mut harness = Harness::new();
+    let releases = latest_release(&mut harness, "v99.0.0");
+    let prefix = TempDir::new().unwrap();
+    let exe = installed_copy(prefix.path(), "Cellar/visor/0.5.0/bin/visor");
+    executable(
+        &prefix.path().join("bin/brew"),
+        "#!/bin/sh\necho 'Error: Your Command Line Tools are too outdated.' >&2\nexit 1\n",
+    );
+
+    Command::new(&exe)
+        .arg("update")
+        .env("VISOR_CONFIG_DIR", harness.config.path())
+        .env("VISOR_RELEASES_URL", releases)
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("Command Line Tools are too outdated"))
+        .stderr(predicate::str::contains("visor was not updated"));
+}
+
+#[cfg(unix)]
+#[test]
+fn update_runs_the_release_installer_into_the_same_directory() {
+    let mut harness = Harness::new();
+    let releases = latest_release(&mut harness, "v99.0.0");
+    let installer = harness
+        .server
+        .mock("GET", "/download/v99.0.0/visor-installer.sh")
+        // Like dist's installer: write elsewhere, then `mv` over the binary
+        // (Linux refuses to write into a running executable).
+        .with_body(
+            "set -e\nprintf 'new' > \"$VISOR_UNMANAGED_INSTALL/visor.tmp\"\nmv \"$VISOR_UNMANAGED_INSTALL/visor.tmp\" \"$VISOR_UNMANAGED_INSTALL/visor\"\necho \"path $VISOR_NO_MODIFY_PATH\"\n",
+        )
+        .create();
+    let cargo_home = TempDir::new().unwrap();
+    let exe = installed_copy(cargo_home.path(), "bin/visor");
+
+    Command::new(&exe)
+        .arg("update")
+        .env("VISOR_CONFIG_DIR", harness.config.path())
+        .env("VISOR_RELEASES_URL", releases)
+        .env(
+            "VISOR_RELEASE_DOWNLOAD_URL",
+            format!("{}/download", harness.server.url()),
+        )
+        .env("CARGO_HOME", cargo_home.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Updated visor to 99.0.0"))
+        .stdout(predicate::str::contains("path 1"));
+
+    installer.assert();
+    assert_eq!(std::fs::read_to_string(&exe).unwrap(), "new");
+}
+
+#[cfg(unix)]
+#[test]
+fn update_prints_the_cargo_command_for_a_cargo_install() {
+    let mut harness = Harness::new();
+    let releases = latest_release(&mut harness, "v99.0.0");
+    let cargo_home = TempDir::new().unwrap();
+    let exe = installed_copy(cargo_home.path(), "bin/visor");
+    std::fs::write(
+        cargo_home.path().join(".crates2.json"),
+        r#"{"installs":{"visor 0.5.0 (git+https://github.com/Visor-Finance/visor-cli#677cfbb)":{}}}"#,
+    )
+    .unwrap();
+
+    Command::new(&exe)
+        .arg("update")
+        .env("VISOR_CONFIG_DIR", harness.config.path())
+        .env("VISOR_RELEASES_URL", releases)
+        .env("CARGO_HOME", cargo_home.path())
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("cargo install --git"));
+}

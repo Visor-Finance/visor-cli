@@ -152,6 +152,19 @@ _arguments "${_arguments_options[@]}" : \
 '--help[Print help]' \
 && ret=0
 ;;
+(update)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--check[Only compare this version with the latest release; exit with code 1 when it is older]' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
 (open)
 _arguments "${_arguments_options[@]}" : \
 '-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
@@ -1672,6 +1685,10 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
+(update)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
 (open)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
@@ -2011,6 +2028,7 @@ _visor_commands() {
 'auth:Log in, log out, and check the stored login' \
 'whoami:Show who is logged in, how, and the space commands act on' \
 'doctor:Check the CLI version, the login, and the connection to Visor' \
+'update:Update the CLI the way it was installed\: Homebrew or the installer' \
 'open:Open Visor in the browser\: the dashboard or a page of it' \
 'me:Show the user the token belongs to' \
 'spaces:List spaces and choose the default one' \
@@ -2309,6 +2327,7 @@ _visor__subcmd__help_commands() {
 'auth:Log in, log out, and check the stored login' \
 'whoami:Show who is logged in, how, and the space commands act on' \
 'doctor:Check the CLI version, the login, and the connection to Visor' \
+'update:Update the CLI the way it was installed\: Homebrew or the installer' \
 'open:Open Visor in the browser\: the dashboard or a page of it' \
 'me:Show the user the token belongs to' \
 'spaces:List spaces and choose the default one' \
@@ -2588,6 +2607,11 @@ _visor__subcmd__help__subcmd__transactions__subcmd__get_commands() {
 _visor__subcmd__help__subcmd__transactions__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'visor help transactions list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__update_commands] )) ||
+_visor__subcmd__help__subcmd__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help update commands' commands "$@"
 }
 (( $+functions[_visor__subcmd__help__subcmd__whoami_commands] )) ||
 _visor__subcmd__help__subcmd__whoami_commands() {
@@ -2924,6 +2948,11 @@ _visor__subcmd__transactions__subcmd__help__subcmd__list_commands() {
 _visor__subcmd__transactions__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'visor transactions list commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__update_commands] )) ||
+_visor__subcmd__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor update commands' commands "$@"
 }
 (( $+functions[_visor__subcmd__whoami_commands] )) ||
 _visor__subcmd__whoami_commands() {

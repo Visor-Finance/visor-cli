@@ -20,6 +20,8 @@ powershell -ExecutionPolicy Bypass -c "irm https://github.com/Visor-Finance/viso
 cargo install --git https://github.com/Visor-Finance/visor-cli
 ```
 
+Update with `visor update`. It upgrades through whatever installed the CLI: `brew upgrade visor-finance/tap/visor` for Homebrew, or the release's installer into the same directory for the shell and PowerShell installers. A `cargo install` build prints the `cargo install` command instead. `visor update --check` only compares versions and exits with code 1 when a new one is out. Once a day the CLI also tells you on a terminal when a new version is out.
+
 Shell completions: `visor completions zsh > "${fpath[1]}/_visor"` (also `bash`, `fish`, `powershell`, `elvish`). Release archives also include them, with a man page, under `completions/` and `man/`.
 
 Verify a downloaded binary: `gh attestation verify visor-aarch64-apple-darwin.tar.xz --repo Visor-Finance/visor-cli`.
@@ -121,7 +123,7 @@ visor tx list --debug
 | Code | Meaning |
 |---|---|
 | 0 | Success |
-| 1 | Other failure |
+| 1 | Other failure; `visor update --check` when a new version is out |
 | 2 | Invalid usage, such as a bad flag or an unknown category name |
 | 3 | Not logged in, invalid or expired token, missing scope, or no Pro or Premium plan |
 | 4 | Not found |

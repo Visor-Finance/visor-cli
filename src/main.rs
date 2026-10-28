@@ -7,8 +7,8 @@ fn main() -> ExitCode {
     let cli = Cli::parse();
     let json = cli.global.json;
 
-    // `doctor` checks the version itself, and completions feed a shell.
-    let notify = matches!(&cli.command, Some(command) if !matches!(command, Command::Completions { .. } | Command::Doctor));
+    // `doctor` and `update` check the version themselves, and completions feed a shell.
+    let notify = matches!(&cli.command, Some(command) if !matches!(command, Command::Completions { .. } | Command::Doctor | Command::Update(_)));
     let update = notify
         .then(|| visor::config::config_dir().ok())
         .flatten()
