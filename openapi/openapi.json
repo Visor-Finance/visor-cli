@@ -1636,12 +1636,12 @@
             "type": "string"
           },
           "name": {
-            "description": "English name of a system category, or the name the user gave a custom category",
+            "description": "The name this space shows: the space name when the space renamed a system category, otherwise its English name; the name the user gave a custom category",
             "type": "string"
           },
           "names": {
             "additionalProperties": false,
-            "description": "English and Brazilian Portuguese labels using Visor's translations and fallbacks; both contain the user's name for a custom category",
+            "description": "Canonical English and Brazilian Portuguese labels using Visor's translations and fallbacks, whatever name the space gave a system category; both contain the user's name for a custom category",
             "example": {
               "en": "Groceries",
               "pt-BR": "Supermercado"
@@ -1661,7 +1661,7 @@
             "type": "object"
           },
           "parent_id": {
-            "description": "Null for a top-level category",
+            "description": "The parent this space shows the category under, which can differ from the canonical parent of a system category; null for a top-level category",
             "format": "uuid",
             "nullable": true,
             "type": "string"
@@ -4249,7 +4249,7 @@
     "/v1/spaces/{space_id}/categories": {
       "get": {
         "callbacks": {},
-        "description": "Returns the system categories and the space's custom categories. Requires the `pfm:read` scope. Match a system category by its `key`: its `name` is English and can change.",
+        "description": "Returns the system categories and the space's custom categories, named and nested the way the space shows them. Requires the `pfm:read` scope. Match a system category by its `key`: its `name` follows the space and can change.",
         "operationId": "VisorWeb.Api.V1.CategoryController.index",
         "parameters": [
           {
