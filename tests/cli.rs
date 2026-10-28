@@ -1538,7 +1538,11 @@ fn update_runs_the_release_installer_into_the_same_directory() {
     let installer = harness
         .server
         .mock("GET", "/download/v99.0.0/visor-installer.sh")
-        .with_body("printf 'new' > \"$VISOR_UNMANAGED_INSTALL/visor\"\necho \"path $VISOR_NO_MODIFY_PATH\"\n")
+        // Like dist's installer: write elsewhere, then `mv` over the binary
+        // (Linux refuses to write into a running executable).
+        .with_body(
+            "set -e\nprintf 'new' > \"$VISOR_UNMANAGED_INSTALL/visor.tmp\"\nmv \"$VISOR_UNMANAGED_INSTALL/visor.tmp\" \"$VISOR_UNMANAGED_INSTALL/visor\"\necho \"path $VISOR_NO_MODIFY_PATH\"\n",
+        )
         .create();
     let cargo_home = TempDir::new().unwrap();
     let exe = installed_copy(cargo_home.path(), "bin/visor");
