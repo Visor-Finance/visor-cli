@@ -5,6 +5,8 @@ people who use the CLI: what they can do now, what changed, what to watch for.
 
 ## Unreleased
 
+## 0.5.0 - 2026-10-28
+
 - `visor pix <key> <amount>` sends a Pix that you confirm with biometrics at your bank (Premium). It asks where you confirm: on this computer (it opens the page) or on your phone (it shows a QR code). Then it waits until the Pix is paid and prints its Pix ID. `--qr` and `--open` skip the question, `--no-wait` prints the Pix and its link and exits, and `--bank`, `--key-type`, and `-d` fill in the rest.
 - `visor pix status <id>` shows a Pix you started.
 - On a terminal, when Visor needs a choice, `visor pix` asks for it and goes on: which of your banks the Pix comes from, or whether a key is a CPF or a phone. In a script, the error lists the options for `--bank` or `--key-type`.
