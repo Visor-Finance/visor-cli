@@ -20,7 +20,9 @@ powershell -ExecutionPolicy Bypass -c "irm https://github.com/Visor-Finance/viso
 cargo install --git https://github.com/Visor-Finance/visor-cli
 ```
 
-Update with `visor update`. It upgrades through whatever installed the CLI: `brew upgrade visor-finance/tap/visor` for Homebrew, or the release's installer into the same directory for the shell and PowerShell installers. A `cargo install` build prints the `cargo install` command instead. `visor update --check` only compares versions and exits with code 1 when a new one is out. Once a day the CLI also tells you on a terminal when a new version is out.
+Update with `visor update`. It upgrades through whatever installed the CLI: `brew upgrade visor-finance/tap/visor` for Homebrew, or the release's installer into the same directory for the shell and PowerShell installers. A `cargo install` build prints the `cargo install` command instead. `visor update --check` only compares versions and exits with code 1 when a new one is out.
+
+Automatic updates are on by default, like flyctl's. On a terminal, after a command, the CLI installs a newer patch version in the background (its output goes to `update.log` in the config directory). A new minor or major version, or one more than five patches ahead, is installed before the command, which then runs in the new version. A failed update never stops the command, and the CLI waits an hour before trying again. Only Homebrew and installer installs update themselves; CI, pipes, and `--json` output never show an update. `visor settings autoupdate disable` turns it off and leaves only the new-version notice; `VISOR_NO_UPDATE_NOTIFIER=1` turns off both.
 
 Shell completions: `visor completions zsh > "${fpath[1]}/_visor"` (also `bash`, `fish`, `powershell`, `elvish`). Release archives also include them, with a man page, under `completions/` and `man/`.
 
@@ -142,7 +144,7 @@ visor tx list --debug
 | `BROWSER` | Command that opens a URL, instead of the system default |
 | `VISOR_FORCE_TTY` | `1` treats the session as a terminal for prompts, for a wrapper that relays them |
 | `VISOR_DEBUG` | `1` logs each HTTP request, like `--debug` |
-| `VISOR_NO_UPDATE_NOTIFIER` | `1` turns off the new-version notice (it is already off in CI and in pipes) |
+| `VISOR_NO_UPDATE_NOTIFIER` | `1` turns off the new-version check: the notice and automatic updates (both are already off in CI and in pipes) |
 
 ## Development
 

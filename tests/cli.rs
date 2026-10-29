@@ -1402,6 +1402,18 @@ fn installed_copy(root: &std::path::Path, relative: &str) -> std::path::PathBuf 
     exe
 }
 
+/// Shell lines for a stub `brew` that links a new `<prefix>/bin/visor`
+/// reporting `version`, and running any other command as `ran: <args>`
+/// with exit code 3.
+#[cfg(unix)]
+fn link_new_visor(prefix: &std::path::Path, version: &str) -> String {
+    let visor = prefix.join("bin/visor");
+    format!(
+        "printf '#!/bin/sh\\nif [ \"$1\" = --version ]; then echo visor {version}; else echo \"ran: $*\"; exit 3; fi\\n' > '{0}'\nchmod +x '{0}'\n",
+        visor.display()
+    )
+}
+
 #[cfg(unix)]
 fn executable(path: &std::path::Path, script: &str) {
     use std::os::unix::fs::PermissionsExt;
@@ -1485,7 +1497,11 @@ fn update_runs_brew_upgrade_for_a_homebrew_install() {
     let log = prefix.path().join("brew.log");
     executable(
         &prefix.path().join("bin/brew"),
-        &format!("#!/bin/sh\necho \"$@\" > '{}'\necho brewing\n", log.display()),
+        &format!(
+            "#!/bin/sh\necho \"$@\" > '{}'\necho brewing\n{}",
+            log.display(),
+            link_new_visor(prefix.path(), "99.0.0")
+        ),
     );
 
     let output = Command::new(&exe)
@@ -1541,7 +1557,7 @@ fn update_runs_the_release_installer_into_the_same_directory() {
         // Like dist's installer: write elsewhere, then `mv` over the binary
         // (Linux refuses to write into a running executable).
         .with_body(
-            "set -e\nprintf 'new' > \"$VISOR_UNMANAGED_INSTALL/visor.tmp\"\nmv \"$VISOR_UNMANAGED_INSTALL/visor.tmp\" \"$VISOR_UNMANAGED_INSTALL/visor\"\necho \"path $VISOR_NO_MODIFY_PATH\"\n",
+            "set -e\nprintf '#!/bin/sh\\necho visor 99.0.0\\n' > \"$VISOR_UNMANAGED_INSTALL/visor.tmp\"\nchmod +x \"$VISOR_UNMANAGED_INSTALL/visor.tmp\"\nmv \"$VISOR_UNMANAGED_INSTALL/visor.tmp\" \"$VISOR_UNMANAGED_INSTALL/visor\"\necho \"path $VISOR_NO_MODIFY_PATH\"\n",
         )
         .create();
     let cargo_home = TempDir::new().unwrap();
@@ -1562,7 +1578,7 @@ fn update_runs_the_release_installer_into_the_same_directory() {
         .stdout(predicate::str::contains("path 1"));
 
     installer.assert();
-    assert_eq!(std::fs::read_to_string(&exe).unwrap(), "new");
+    assert!(std::fs::read_to_string(&exe).unwrap().contains("visor 99.0.0"));
 }
 
 #[cfg(unix)]
@@ -1586,4 +1602,207 @@ fn update_prints_the_cargo_command_for_a_cargo_install() {
         .assert()
         .code(1)
         .stderr(predicate::str::contains("cargo install --git"));
+}
+
+#[cfg(unix)]
+#[test]
+fn update_fails_when_brew_installs_nothing_new() {
+    let mut harness = Harness::new();
+    let releases = latest_release(&mut harness, "v99.0.0");
+    let prefix = TempDir::new().unwrap();
+    let exe = installed_copy(prefix.path(), "Cellar/visor/0.5.0/bin/visor");
+    executable(
+        &prefix.path().join("bin/brew"),
+        &format!("#!/bin/sh\n{}", link_new_visor(prefix.path(), "0.5.0")),
+    );
+
+    Command::new(&exe)
+        .arg("update")
+        .env("VISOR_CONFIG_DIR", harness.config.path())
+        .env("VISOR_RELEASES_URL", releases)
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("visor 99.0.0 was not installed"))
+        .stderr(predicate::str::contains("Homebrew may not have it yet"));
+}
+
+/// A Homebrew install of this build whose last release check found
+/// `latest`, with automatic updates forced on as on a terminal.
+#[cfg(unix)]
+struct AutoUpdate {
+    prefix: TempDir,
+    config: TempDir,
+    exe: std::path::PathBuf,
+}
+
+#[cfg(unix)]
+impl AutoUpdate {
+    fn new(latest: &str, brew_script: &str) -> Self {
+        let prefix = TempDir::new().unwrap();
+        let config = TempDir::new().unwrap();
+        let exe = installed_copy(prefix.path(), "Cellar/visor/0.5.0/bin/visor");
+        let script = brew_script
+            .replace("LOG", &prefix.path().join("brew.log").display().to_string())
+            .replace("LINK", &link_new_visor(prefix.path(), latest));
+        executable(&prefix.path().join("bin/brew"), &format!("#!/bin/sh\n{script}"));
+        std::fs::write(
+            config.path().join("update-check.json"),
+            json!({ "checked_at": chrono_now(), "latest": latest }).to_string(),
+        )
+        .unwrap();
+        Self { prefix, config, exe }
+    }
+
+    fn visor(&self) -> Command {
+        let mut cmd = Command::new(&self.exe);
+        cmd.env("VISOR_CONFIG_DIR", self.config.path())
+            .env("VISOR_UPDATE_CHECK", "1")
+            .env("VISOR_RELEASES_URL", "http://127.0.0.1:9/unreachable")
+            .env_remove("VISOR_NO_UPDATE_NOTIFIER")
+            .env_remove("CI");
+        cmd
+    }
+
+    fn brew_log(&self) -> Option<String> {
+        std::fs::read_to_string(self.prefix.path().join("brew.log")).ok()
+    }
+}
+
+#[cfg(unix)]
+fn chrono_now() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+        .try_into()
+        .unwrap()
+}
+
+/// This build's version with `patch` added to its patch number.
+#[cfg(unix)]
+fn patch_ahead(patch: u64) -> String {
+    let mut parts: Vec<u64> = env!("CARGO_PKG_VERSION")
+        .split('.')
+        .map(|part| part.parse().unwrap())
+        .collect();
+    parts[2] += patch;
+    format!("{}.{}.{}", parts[0], parts[1], parts[2])
+}
+
+#[cfg(unix)]
+#[test]
+fn a_new_minor_version_is_installed_before_the_command_which_runs_in_it() {
+    let auto = AutoUpdate::new("99.0.0", "echo \"$@\" > 'LOG'\nLINK");
+
+    auto.visor()
+        .args(["open", "--print"])
+        .assert()
+        .code(3)
+        .stderr(predicate::str::contains("Automatically updating visor"))
+        .stdout(predicate::str::contains("ran: open --print"));
+
+    assert_eq!(auto.brew_log().unwrap().trim(), "upgrade visor-finance/tap/visor");
+}
+
+#[cfg(unix)]
+#[test]
+fn a_failed_automatic_update_runs_the_command_anyway_and_waits_an_hour() {
+    let auto = AutoUpdate::new("99.0.0", "echo \"$@\" >> 'LOG'\nexit 1");
+
+    auto.visor()
+        .args(["open", "--print"])
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("The automatic update failed"))
+        .stdout(predicate::str::contains("https://dashboard.visorfinance.app"));
+
+    // Within the hour there is no second attempt, before or after the command.
+    auto.visor()
+        .args(["open", "--print"])
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("Automatically updating").not());
+    assert_eq!(auto.brew_log().unwrap().lines().count(), 1);
+}
+
+#[cfg(unix)]
+#[test]
+fn automatic_updates_turned_off_only_show_the_notice() {
+    let auto = AutoUpdate::new("99.0.0", "echo \"$@\" > 'LOG'\nLINK");
+
+    auto.visor()
+        .args(["settings", "autoupdate", "disable"])
+        .assert()
+        .success()
+        .stdout("Automatic updates: disabled\n");
+    auto.visor()
+        .args(["open", "--print"])
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("99.0.0 is out"));
+
+    assert!(auto.brew_log().is_none());
+}
+
+#[cfg(unix)]
+#[test]
+fn a_new_patch_is_installed_in_the_background_after_the_command() {
+    let latest = patch_ahead(1);
+    let auto = AutoUpdate::new(&latest, "echo \"$@\" > 'LOG'\nLINK");
+
+    auto.visor()
+        .args(["open", "--print"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("https://dashboard.visorfinance.app"))
+        .stderr(predicate::str::contains("is out").not())
+        .stderr(predicate::str::contains("Automatically updating").not());
+
+    // The background `visor update` checks GitHub itself; here it cannot
+    // reach it, so it stops before brew and says so in update.log.
+    let log = auto.config.path().join("update.log");
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    let text = loop {
+        let text = std::fs::read_to_string(&log).unwrap_or_default();
+        if text.contains("error") || std::time::Instant::now() > deadline {
+            break text;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    };
+    assert!(text.contains("latest version from GitHub"), "{text}");
+}
+
+#[cfg(unix)]
+#[test]
+fn json_output_updates_silently() {
+    let auto = AutoUpdate::new("99.0.0", "echo \"$@\" > 'LOG'\necho brewing\nLINK");
+
+    auto.visor()
+        .args(["open", "--print", "--json"])
+        .assert()
+        .code(3)
+        .stderr(predicate::str::contains("Automatically updating").not())
+        .stderr(predicate::str::contains("brewing").not())
+        .stdout(predicate::str::contains("ran: open --print --json"));
+}
+
+#[test]
+fn settings_autoupdate_is_on_by_default_and_saved_in_the_config() {
+    let harness = Harness::new();
+
+    harness
+        .visor()
+        .args(["settings", "autoupdate"])
+        .assert()
+        .success()
+        .stdout("Automatic updates: enabled\n");
+    harness
+        .visor()
+        .args(["settings", "autoupdate", "disable", "--json"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(r#""auto_update": false"#));
+
+    let config = std::fs::read_to_string(harness.config.path().join("config.toml")).unwrap();
+    assert!(config.contains("auto_update = false"), "{config}");
 }

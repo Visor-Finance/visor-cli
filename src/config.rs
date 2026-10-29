@@ -17,6 +17,10 @@ pub struct Config {
     /// The space commands act on when `--space` is not given.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub default_space: Option<String>,
+
+    /// Automatic updates, on unless set to `false` (`visor settings autoupdate`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auto_update: Option<bool>,
 }
 
 pub fn config_dir() -> Result<PathBuf> {
@@ -40,6 +44,12 @@ fn non_empty_env(name: &str) -> Option<String> {
 }
 
 impl Config {
+    /// True unless automatic updates were turned off, like flyctl's default.
+    #[must_use]
+    pub fn auto_update(&self) -> bool {
+        self.auto_update.unwrap_or(true)
+    }
+
     pub fn load(dir: &Path) -> Result<Self> {
         let path = dir.join(FILE_NAME);
         match fs::read_to_string(&path) {
@@ -95,11 +105,24 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let config = Config {
             default_space: Some("b5e2d0de-0000-4000-8000-000000000001".into()),
+            auto_update: Some(false),
         };
 
         config.save(&dir.path().join("nested")).unwrap();
 
         assert_eq!(Config::load(&dir.path().join("nested")).unwrap(), config);
+    }
+
+    #[test]
+    fn automatic_updates_are_on_by_default() {
+        assert!(Config::default().auto_update());
+        assert!(
+            !Config {
+                auto_update: Some(false),
+                ..Config::default()
+            }
+            .auto_update()
+        );
     }
 
     #[test]

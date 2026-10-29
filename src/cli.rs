@@ -40,6 +40,34 @@ A Homebrew install runs `brew upgrade visor-finance/tap/visor`; an install
 from the shell or PowerShell installer runs that release's installer into the
 same directory. A `cargo install` prints the command to run instead.";
 
+const AUTOUPDATE_HELP: &str = "\
+Automatic updates are on by default, like flyctl's. On a terminal, after a
+command, the CLI installs a newer patch version in the background (its output
+goes to update.log in the config directory). When the new version is a new
+minor or major version, or more than five patches ahead, it installs it before
+the command and runs the command in the new version. Only Homebrew and
+installer installs update themselves; CI, pipes, and scripts never do.
+
+Examples:
+  visor settings autoupdate            # show the setting
+  visor settings autoupdate disable    # only show the new-version notice";
+
+#[derive(Debug, Subcommand)]
+pub enum SettingsCommand {
+    /// Show, enable, or disable automatic updates
+    #[command(after_help = AUTOUPDATE_HELP)]
+    Autoupdate {
+        #[arg(value_enum)]
+        action: Option<Toggle>,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum Toggle {
+    Enable,
+    Disable,
+}
+
 #[derive(Debug, Args)]
 pub struct UpdateArgs {
     /// Only compare this version with the latest release; exit with code 1 when it is older
@@ -85,6 +113,10 @@ pub enum Command {
     /// Update the CLI the way it was installed: Homebrew or the installer
     #[command(after_help = UPDATE_HELP)]
     Update(UpdateArgs),
+
+    /// Show and change CLI settings, such as automatic updates
+    #[command(subcommand)]
+    Settings(SettingsCommand),
 
     /// Open Visor in the browser: the dashboard or a page of it
     #[command(after_help = "Examples:\n  visor open\n  visor open transactions\n  visor open tokens --print")]

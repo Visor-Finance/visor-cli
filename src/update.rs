@@ -1,6 +1,7 @@
 //! The new-version notice, like `gh`: at most one check a day, run beside
 //! the command so it never slows it down, and shown only to a person. Also
-//! how this binary was installed, which `visor update` follows.
+//! how this binary was installed, which `visor update` follows, and the
+//! automatic updates that run it, like flyctl's (see [`auto`]).
 
 use std::io::IsTerminal;
 use std::path::{Path, PathBuf};
@@ -21,7 +22,17 @@ pub const FORMULA: &str = "visor-finance/tap/visor";
 pub const CARGO_INSTALL: &str =
     "cargo install --git https://github.com/Visor-Finance/visor-cli --locked --force";
 const CACHE_FILE: &str = "update-check.json";
-const CHECK_EVERY_SECONDS: i64 = 24 * 60 * 60;
+const ATTEMPT_FILE: &str = "auto-update.json";
+const LOG_FILE: &str = "update.log";
+/// Like flyctl: at most one release check an hour.
+const CHECK_EVERY_SECONDS: i64 = 60 * 60;
+/// At most one automatic update attempt an hour, so a broken Homebrew does
+/// not run on every command.
+const ATTEMPT_EVERY_SECONDS: i64 = 60 * 60;
+/// How long a release check may take. The command waits for it at the end
+/// (like flyctl's tasks), at most once an hour: a thread still running when
+/// the command exits dies with it, and the cache would never fill.
+const CHECK_TIMEOUT: Duration = Duration::from_secs(2);
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct Cache {
@@ -49,6 +60,21 @@ pub fn latest_release(timeout: Duration) -> Option<String> {
         .json()
         .ok()?;
     Some(release.tag_name.trim_start_matches('v').to_owned())
+}
+
+/// True when `latest` is far enough ahead to update before the command,
+/// like flyctl's `SignificantlyBehind`: a new major or minor version, or
+/// more than five patches.
+#[must_use]
+pub fn far_behind(latest: &str, current: &str) -> bool {
+    let parts = |version: &str| -> [u64; 3] {
+        let mut parts = version.split('.').map(|part| part.parse().unwrap_or(0));
+        [(); 3].map(|()| parts.next().unwrap_or(0))
+    };
+    let ([major, minor, patch], [current_major, current_minor, current_patch]) =
+        (parts(latest), parts(current));
+    (major, minor) > (current_major, current_minor)
+        || ((major, minor) == (current_major, current_minor) && patch > current_patch + 5)
 }
 
 /// The URL of the installer script of release `version`, for this platform.
@@ -95,6 +121,24 @@ impl Install {
             .map(PathBuf::from)
             .or_else(|| dirs::home_dir().map(|home| home.join(".cargo")));
         detect_at(&exe, cargo_home.as_deref())
+    }
+
+    /// True for the installs `visor update` replaces itself.
+    #[must_use]
+    pub fn can_update(&self) -> bool {
+        matches!(self, Self::Homebrew { .. } | Self::Installer { .. })
+    }
+
+    /// The path that runs this install after an update. Homebrew links
+    /// `<prefix>/bin/visor` to the new version; the old one may be gone.
+    #[must_use]
+    pub fn binary(&self) -> Option<PathBuf> {
+        let name = if cfg!(windows) { "visor.exe" } else { "visor" };
+        match self {
+            Self::Homebrew { brew } => Some(brew.with_file_name(name)),
+            Self::Installer { dir } => Some(dir.join(name)),
+            Self::Cargo | Self::Unknown { .. } => None,
+        }
     }
 
     /// A stable name for `--json` and the messages.
@@ -155,9 +199,19 @@ pub fn newer(a: &str, b: &str) -> bool {
 }
 
 /// True when the notice may run: a person at a terminal, outside CI.
+/// `VISOR_UPDATE_CHECK=1` forces it, like `FLY_UPDATE_CHECK`.
 fn wanted() -> bool {
     let set = |name| std::env::var_os(name).is_some_and(|value| !value.is_empty());
-    std::io::stderr().is_terminal() && !set("CI") && !set("VISOR_NO_UPDATE_NOTIFIER")
+    set("VISOR_UPDATE_CHECK")
+        || (std::io::stderr().is_terminal() && !set("CI") && !set("VISOR_NO_UPDATE_NOTIFIER"))
+}
+
+/// The latest version from the last check, without a request.
+fn cached_latest(config_dir: &Path) -> Option<String> {
+    let text = std::fs::read_to_string(config_dir.join(CACHE_FILE)).ok()?;
+    serde_json::from_str::<Cache>(&text)
+        .ok()
+        .map(|cache| cache.latest)
 }
 
 /// Starts the check. The receiver yields the latest version once known.
@@ -183,7 +237,7 @@ fn start_at(cache_path: PathBuf, now: i64) -> Receiver<String> {
         }
         _ => {
             thread::spawn(move || {
-                if let Some(latest) = latest_release(Duration::from_secs(3)) {
+                if let Some(latest) = latest_release(CHECK_TIMEOUT) {
                     let cache = Cache {
                         checked_at: now,
                         latest: latest.clone(),
@@ -198,14 +252,168 @@ fn start_at(cache_path: PathBuf, now: i64) -> Receiver<String> {
     receiver
 }
 
-/// Shows the notice if the check finished and found a newer version. It
-/// never waits: a slow check is shown on a later run, from the cache.
-pub fn finish(receiver: Option<Receiver<String>>) {
-    if let Some(message) = receiver
-        .and_then(|receiver| receiver.try_recv().ok())
-        .and_then(|latest| notice(&latest))
-    {
+/// After the command: updates in the background when automatic updates
+/// may, else shows the notice, if the check finished and found a newer
+/// version. A check in flight gets up to [`CHECK_TIMEOUT`] to finish.
+pub fn finish(receiver: Option<Receiver<String>>, config_dir: Option<&Path>, json: bool) {
+    let Some(latest) = receiver.and_then(|receiver| receiver.recv_timeout(CHECK_TIMEOUT).ok()) else {
+        return;
+    };
+    if config_dir.is_some_and(|dir| auto::in_background(dir, &latest)) || json {
+        return;
+    }
+    if let Some(message) = notice(&latest) {
         eprintln!("\n{message}");
+    }
+}
+
+/// Automatic updates, like flyctl's `promptAndAutoUpdate`: on by default,
+/// only for a person at a terminal, and only for an install `visor update`
+/// can replace. A version far ahead is installed before the command, which
+/// then runs again in the new binary; a newer patch is installed in the
+/// background after it (not on Windows, where flyctl only does the first).
+/// Unlike flyctl, a failed update never stops the command.
+pub mod auto {
+    use std::io::IsTerminal;
+    use std::path::Path;
+    use std::process::{Command, ExitCode, Stdio};
+
+    use serde::{Deserialize, Serialize};
+
+    use super::{ATTEMPT_EVERY_SECONDS, ATTEMPT_FILE, Install, LOG_FILE, cached_latest, far_behind, newer};
+    use crate::config::{Config, write_atomically};
+    use crate::output::Paint;
+
+    #[derive(Serialize, Deserialize)]
+    struct Attempt {
+        attempted_at: i64,
+    }
+
+    /// True when automatic updates may run: the notice may, standard output
+    /// is a terminal too (a pipe never sees the binary change), and the
+    /// config does not turn them off.
+    fn enabled(config_dir: &Path) -> bool {
+        let forced = std::env::var_os("VISOR_UPDATE_CHECK").is_some_and(|value| !value.is_empty());
+        super::wanted()
+            && (forced || std::io::stdout().is_terminal())
+            && Config::load(config_dir).map_or(true, |config| config.auto_update())
+    }
+
+    /// Records an attempt unless one ran within the hour.
+    fn claim_attempt(config_dir: &Path) -> bool {
+        let path = config_dir.join(ATTEMPT_FILE);
+        let now = chrono::Utc::now().timestamp();
+        let last = std::fs::read_to_string(&path)
+            .ok()
+            .and_then(|text| serde_json::from_str::<Attempt>(&text).ok());
+        if last.is_some_and(|last| now - last.attempted_at < ATTEMPT_EVERY_SECONDS) {
+            return false;
+        }
+        let text = serde_json::to_vec(&Attempt { attempted_at: now }).expect("attempt serializes");
+        write_atomically(&path, &text, false).is_ok()
+    }
+
+    /// Before the command: when the last check found a version far ahead,
+    /// installs it and runs the command again in the new binary, returning
+    /// that run's exit code. `None` means: run the command here.
+    #[must_use]
+    pub fn before(config_dir: &Path, json: bool) -> Option<ExitCode> {
+        let current = env!("CARGO_PKG_VERSION");
+        if !enabled(config_dir) {
+            return None;
+        }
+        let latest = cached_latest(config_dir)
+            .filter(|latest| newer(latest, current) && far_behind(latest, current))?;
+        let install = Install::detect();
+        if !install.can_update() || !claim_attempt(config_dir) {
+            return None;
+        }
+
+        let paint = Paint::stderr();
+        if !json {
+            eprintln!(
+                "{} Automatically updating visor {current} → {}.",
+                paint.warn(),
+                paint.bold(&latest)
+            );
+        }
+        let output = if json {
+            crate::commands::UpdateOutput::Quiet
+        } else {
+            crate::commands::UpdateOutput::Stderr
+        };
+        if let Err(error) = crate::commands::install_update(&install, &latest, output) {
+            if !json {
+                eprintln!(
+                    "{} The automatic update failed: {error}\n  Running this command with visor {current}. Run `visor update` to try again.\n",
+                    paint.warn()
+                );
+            }
+            return None;
+        }
+
+        let binary = install.binary()?;
+        // Like flyctl's `Relaunch`: the same arguments, without a second check.
+        match Command::new(&binary)
+            .args(std::env::args_os().skip(1))
+            .env("VISOR_NO_UPDATE_NOTIFIER", "1")
+            .env_remove("VISOR_UPDATE_CHECK")
+            .status()
+        {
+            Ok(status) => Some(ExitCode::from(
+                status
+                    .code()
+                    .and_then(|code| u8::try_from(code).ok())
+                    .unwrap_or(1),
+            )),
+            Err(error) => {
+                if !json {
+                    eprintln!(
+                        "{} Updated, but cannot run {}: {error}",
+                        paint.warn(),
+                        binary.display()
+                    );
+                }
+                None
+            }
+        }
+    }
+
+    /// After the command: starts `visor update` in the background for a
+    /// newer version, with its output in `update.log`. True when the update
+    /// is handled (started now or within the hour), so no notice is needed.
+    #[must_use]
+    pub fn in_background(config_dir: &Path, latest: &str) -> bool {
+        if cfg!(windows) || !enabled(config_dir) || !newer(latest, env!("CARGO_PKG_VERSION")) {
+            return false;
+        }
+        if !Install::detect().can_update() {
+            return false;
+        }
+        if !claim_attempt(config_dir) {
+            return true;
+        }
+        let Ok(exe) = std::env::current_exe() else {
+            return false;
+        };
+        let Ok(log) = std::fs::File::create(config_dir.join(LOG_FILE)) else {
+            return false;
+        };
+        let Ok(log_err) = log.try_clone() else {
+            return false;
+        };
+        let mut command = Command::new(exe);
+        command
+            .arg("update")
+            .stdin(Stdio::null())
+            .stdout(log)
+            .stderr(log_err)
+            .env("VISOR_NO_UPDATE_NOTIFIER", "1")
+            .env_remove("VISOR_UPDATE_CHECK");
+        // Its own process group, so Ctrl+C in the shell does not stop it.
+        #[cfg(unix)]
+        std::os::unix::process::CommandExt::process_group(&mut command, 0);
+        command.spawn().is_ok()
     }
 }
 
@@ -225,6 +433,16 @@ fn notice(latest: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn far_behind_is_a_new_minor_or_more_than_five_patches() {
+        assert!(far_behind("0.7.0", "0.6.0"));
+        assert!(far_behind("1.0.0", "0.9.9"));
+        assert!(far_behind("0.6.6", "0.6.0"));
+        assert!(!far_behind("0.6.5", "0.6.0"));
+        assert!(!far_behind("0.6.1", "0.6.0"));
+        assert!(!far_behind("0.6.0", "0.6.0"));
+    }
 
     #[test]
     fn compares_versions_by_number() {

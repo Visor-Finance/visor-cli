@@ -9,6 +9,8 @@ pub(crate) mod status;
 mod transactions;
 mod update;
 
+pub use update::{UpdateOutput, install_update};
+
 use std::io::{self, IsTerminal};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -62,6 +64,7 @@ pub fn run(cli: Cli) -> Result<()> {
             return doctor::run(&cli.global, format);
         }
         Command::Update(args) => return update::run(&args, format),
+        Command::Settings(command) => return settings(&command, format),
         Command::Open { page, print } => {
             // Like `gh browse`: print the URL when asked or when no browser opens.
             if print || !crate::browser::open(page.url()) {
@@ -102,6 +105,7 @@ pub fn run(cli: Cli) -> Result<()> {
         | Command::Whoami
         | Command::Doctor
         | Command::Update(_)
+        | Command::Settings(_)
         | Command::Open { .. }
         | Command::Completions { .. } => {
             unreachable!("handled above")
@@ -253,4 +257,27 @@ fn confirm(question: &str) -> Result<bool> {
         .read_line(&mut answer)
         .map_err(|error| Error::io("cannot read the answer", error))?;
     Ok(matches!(answer.trim(), "y" | "Y" | "yes" | "Yes"))
+}
+
+/// `visor settings`: the settings in `config.toml` that are not a space.
+fn settings(command: &crate::cli::SettingsCommand, format: Format) -> Result<()> {
+    let crate::cli::SettingsCommand::Autoupdate { action } = command;
+    let config_dir = config::config_dir()?;
+    let mut config = Config::load(&config_dir)?;
+    if let Some(action) = action {
+        config.auto_update = Some(*action == crate::cli::Toggle::Enable);
+        config.save(&config_dir)?;
+    }
+    let enabled = config.auto_update();
+    if format == Format::Json {
+        return output::json(&serde_json::json!({ "auto_update": enabled }));
+    }
+    output::line(&format!(
+        "Automatic updates: {}",
+        if enabled { "enabled" } else { "disabled" }
+    ))?;
+    if action.is_none() {
+        output::note("Change it with `visor settings autoupdate enable` or `disable`.");
+    }
+    Ok(())
 }

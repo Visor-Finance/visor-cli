@@ -30,19 +30,43 @@ pub fn run(args: &UpdateArgs, format: Format) -> Result<()> {
         };
     }
 
-    match &install {
+    if install.can_update() {
+        let with = if matches!(install, Install::Homebrew { .. }) {
+            "Homebrew"
+        } else {
+            "the installer"
+        };
+        output::note(&format!("Updating visor {current} → {latest} with {with}…"));
+    }
+    let output = if format == Format::Json {
+        UpdateOutput::Stderr
+    } else {
+        UpdateOutput::Terminal
+    };
+    install_update(&install, &latest, output)?;
+    report(format, current, &latest, available, &install, true)
+}
+
+/// Where the output of Homebrew or the installer goes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UpdateOutput {
+    Terminal,
+    /// Standard error, so standard output stays JSON.
+    Stderr,
+    /// Nowhere: an automatic update under `--json`.
+    Quiet,
+}
+
+/// Installs release `latest` through whatever installed this binary, then
+/// checks that the installed binary is that version.
+pub fn install_update(install: &Install, latest: &str, output: UpdateOutput) -> Result<()> {
+    match install {
         Install::Homebrew { brew } => {
-            output::note(&format!("Updating visor {current} → {latest} with Homebrew…"));
             let mut command = Command::new(brew);
             command.args(["upgrade", FORMULA]);
-            run_step(command, &format!("brew upgrade {FORMULA}"), format)?;
+            run_step(command, &format!("brew upgrade {FORMULA}"), output)?;
         }
-        Install::Installer { dir } => {
-            output::note(&format!(
-                "Updating visor {current} → {latest} with the installer…"
-            ));
-            run_installer(&latest, dir, format)?;
-        }
+        Install::Installer { dir } => run_installer(latest, dir, output)?,
         Install::Cargo => {
             return Err(Error::CannotUpdate(format!(
                 "visor {latest} is out, and this visor was installed with cargo. Update it with:\n  {CARGO_INSTALL}"
@@ -55,7 +79,42 @@ pub fn run(args: &UpdateArgs, format: Format) -> Result<()> {
             )));
         }
     }
-    report(format, current, &latest, available, &install, true)
+    verify(install, latest)
+}
+
+/// Fails unless the installed binary reports `latest`. The Homebrew tap is
+/// published minutes after the GitHub release, and `brew upgrade` then
+/// succeeds without installing anything.
+fn verify(install: &Install, latest: &str) -> Result<()> {
+    let Some(binary) = install.binary() else {
+        return Ok(());
+    };
+    let found = Command::new(&binary)
+        .arg("--version")
+        .env("VISOR_NO_UPDATE_NOTIFIER", "1")
+        .env_remove("VISOR_UPDATE_CHECK")
+        .output()
+        .ok()
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|text| text.trim().trim_start_matches("visor ").to_owned());
+    match found {
+        Some(version) if version == latest => Ok(()),
+        found => {
+            let found = found.map_or_else(
+                || "cannot be run".to_owned(),
+                |version| format!("is visor {version}"),
+            );
+            let hint = if matches!(install, Install::Homebrew { .. }) {
+                " Homebrew may not have it yet; try again in a few minutes."
+            } else {
+                ""
+            };
+            Err(Error::UpdateFailed(format!(
+                "visor {latest} was not installed: {} {found}.{hint}",
+                binary.display()
+            )))
+        }
+    }
 }
 
 fn report(
@@ -97,8 +156,10 @@ fn report(
 
 /// Downloads the installer of release `version` and runs it into `dir`, the
 /// directory of this binary, without touching PATH again.
-fn run_installer(version: &str, dir: &Path, format: Format) -> Result<()> {
-    crate::activity::start("Downloading the installer…");
+fn run_installer(version: &str, dir: &Path, output: UpdateOutput) -> Result<()> {
+    if output != UpdateOutput::Quiet {
+        crate::activity::start("Downloading the installer…");
+    }
     let url = update::installer_url(version);
     let script = client::http_with_timeout(Duration::from_secs(60))?
         .get(&url)
@@ -130,7 +191,7 @@ fn run_installer(version: &str, dir: &Path, format: Format) -> Result<()> {
         std::fs::rename(dir.join("visor.exe"), aside)
             .map_err(|error| Error::io("cannot move the running visor.exe aside", error))?;
     }
-    let result = run_step(command, &format!("the installer from {url}"), format);
+    let result = run_step(command, &format!("the installer from {url}"), output);
     if let (Err(_), Some(aside)) = (&result, &aside) {
         let _ = std::fs::rename(aside, dir.join("visor.exe"));
     }
@@ -138,18 +199,30 @@ fn run_installer(version: &str, dir: &Path, format: Format) -> Result<()> {
     result
 }
 
-/// Runs an update step with its output on the terminal. With `--json` its
-/// output goes to standard error, so standard output stays JSON.
-fn run_step(mut command: Command, name: &str, format: Format) -> Result<()> {
+/// Runs an update step with its output where `output` says.
+fn run_step(mut command: Command, name: &str, output: UpdateOutput) -> Result<()> {
     crate::activity::stop();
-    if format == Format::Json {
-        command.stdout(Stdio::from(std::io::stderr()));
+    match output {
+        UpdateOutput::Terminal => {}
+        UpdateOutput::Stderr => {
+            command.stdout(Stdio::from(std::io::stderr()));
+        }
+        UpdateOutput::Quiet => {
+            command
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null());
+        }
     }
     let status = command
         .status()
         .map_err(|error| Error::UpdateFailed(format!("cannot run {name}: {error}")))?;
     if status.success() {
         Ok(())
+    } else if output == UpdateOutput::Quiet {
+        Err(Error::UpdateFailed(format!(
+            "{name} failed ({status}). visor was not updated"
+        )))
     } else {
         Err(Error::UpdateFailed(format!(
             "{name} failed ({status}); its output above says why. visor was not updated"
