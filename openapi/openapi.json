@@ -2632,7 +2632,7 @@
     "/v1/pix-payments": {
       "post": {
         "callbacks": {},
-        "description": "Starts a Pix to one Pix key and returns it with a `start_url`. Open `start_url` in the browser: the first Pix from a bank opens the bank page to authorize Visor, then every Pix opens the page where the user confirms with biometrics. Nothing is paid until the user confirms there. Requires the `pix:payments:write` scope (Visor CLI login), the Premium plan, and an `Idempotency-Key` header. A retry with the same key and the same Pix returns the Pix already started, with `idempotent-replayed: true`; the same key with another key, amount, or description returns `409 IDEMPOTENCY_CONFLICT`. Read `GET /v1/pix-payments/{pix_payment_id}` until `status` is final.",
+        "description": "Starts a Pix to one Pix key and returns it with a `start_url`. Open `start_url` in the browser: the first Pix from a bank opens the bank page to authorize Visor, then every Pix opens the page where the user confirms with biometrics. Nothing is paid until the user confirms there. Requires the `pix:payments:write` scope (Visor CLI login), the Pro or Premium plan, and an `Idempotency-Key` header. A retry with the same key and the same Pix returns the Pix already started, with `idempotent-replayed: true`; the same key with another key, amount, or description returns `409 IDEMPOTENCY_CONFLICT`. Read `GET /v1/pix-payments/{pix_payment_id}` until `status` is final.",
         "operationId": "VisorWeb.Api.V1.PixPaymentController.create",
         "parameters": [
           {
@@ -2814,7 +2814,7 @@
                 }
               }
             },
-            "description": "Premium plan required, insufficient scope, or Pix not available for the account",
+            "description": "Pro or Premium plan required, insufficient scope, or Pix not available for the account",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
@@ -3099,7 +3099,7 @@
                 }
               }
             },
-            "description": "Premium plan required, insufficient scope, or Pix not available for the account",
+            "description": "Pro or Premium plan required, insufficient scope, or Pix not available for the account",
             "headers": {
               "x-request-id": {
                 "description": "Request identifier, also returned as `request_id` in errors",
