@@ -151,7 +151,7 @@ pub enum Command {
     /// Show balances, the month so far, and the projection for a space
     Overview,
 
-    /// Send a Pix that you confirm with biometrics at your bank (Premium)
+    /// Send a Pix that you confirm with biometrics at your bank (Pro or Premium)
     #[command(
         args_conflicts_with_subcommands = true,
         subcommand_negates_reqs = true,
@@ -314,8 +314,8 @@ A bank link lives on the device that made it. To confirm on another device
 (the bank page says \"Dispositivo não reconhecido\"), pass --link-device: that
 device links the bank first, then confirms.
 
-Pix through the CLI needs the Premium plan and the browser login (`visor auth
-login`). The first time, the CLI opens the browser so you can allow Pix.
+Pix through the CLI needs the Pro plan (10 Pix a month) or Premium (30) and
+the browser login (`visor auth login`). The first time, the CLI opens the browser so you can allow Pix.
 
 Examples:
   visor pix maria@example.com 20,00 -d Almoço

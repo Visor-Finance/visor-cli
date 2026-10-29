@@ -5,6 +5,8 @@ people who use the CLI: what they can do now, what changed, what to watch for.
 
 ## Unreleased
 
+- Pix works on the Pro plan too (10 Pix a month; Premium has 30). The help, the README, and the `PREMIUM_REQUIRED` hint said Premium only.
+
 ## 0.6.0 - 2026-10-28
 
 - `visor update` updates the CLI the way it was installed: it runs `brew upgrade visor-finance/tap/visor` for Homebrew, or the new release's installer into the same directory for the shell and PowerShell installers. A `cargo install` build prints the `cargo install` command to run. If Homebrew or the installer fails, its own error stays on screen and visor is left as it was.
