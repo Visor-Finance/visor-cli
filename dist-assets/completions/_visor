@@ -165,6 +165,67 @@ _arguments "${_arguments_options[@]}" : \
 '--help[Print help]' \
 && ret=0
 ;;
+(settings)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_visor__subcmd__settings_commands" \
+"*::: :->settings" \
+&& ret=0
+
+    case $state in
+    (settings)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-settings-command-$line[1]:"
+        case $line[1] in
+            (autoupdate)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--space=[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
+'--api-url=[API base URL]:API_URL:_default' \
+'--auth-url=[Base URL of the browser login (OAuth authorization server)]:AUTH_URL:_default' \
+'--json[Print the API response body as JSON instead of a table]' \
+'--debug[Print each HTTP request (method, URL, status, time, request ID) on standard error]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'::action:(enable disable)' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__settings__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-settings-help-command-$line[1]:"
+        case $line[1] in
+            (autoupdate)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
 (open)
 _arguments "${_arguments_options[@]}" : \
 '-s+[Space to act on, by name or ID \[default\: the one set with \`visor spaces use\`\]]:SPACE:_default' \
@@ -1689,6 +1750,26 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
+(settings)
+_arguments "${_arguments_options[@]}" : \
+":: :_visor__subcmd__help__subcmd__settings_commands" \
+"*::: :->settings" \
+&& ret=0
+
+    case $state in
+    (settings)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:visor-help-settings-command-$line[1]:"
+        case $line[1] in
+            (autoupdate)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
 (open)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
@@ -2029,6 +2110,7 @@ _visor_commands() {
 'whoami:Show who is logged in, how, and the space commands act on' \
 'doctor:Check the CLI version, the login, and the connection to Visor' \
 'update:Update the CLI the way it was installed\: Homebrew or the installer' \
+'settings:Show and change CLI settings, such as automatic updates' \
 'open:Open Visor in the browser\: the dashboard or a page of it' \
 'me:Show the user the token belongs to' \
 'spaces:List spaces and choose the default one' \
@@ -2328,6 +2410,7 @@ _visor__subcmd__help_commands() {
 'whoami:Show who is logged in, how, and the space commands act on' \
 'doctor:Check the CLI version, the login, and the connection to Visor' \
 'update:Update the CLI the way it was installed\: Homebrew or the installer' \
+'settings:Show and change CLI settings, such as automatic updates' \
 'open:Open Visor in the browser\: the dashboard or a page of it' \
 'me:Show the user the token belongs to' \
 'spaces:List spaces and choose the default one' \
@@ -2529,6 +2612,18 @@ _visor__subcmd__help__subcmd__pix_commands() {
 _visor__subcmd__help__subcmd__pix__subcmd__status_commands() {
     local commands; commands=()
     _describe -t commands 'visor help pix status commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__settings_commands] )) ||
+_visor__subcmd__help__subcmd__settings_commands() {
+    local commands; commands=(
+'autoupdate:Show, enable, or disable automatic updates' \
+    )
+    _describe -t commands 'visor help settings commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__help__subcmd__settings__subcmd__autoupdate_commands] )) ||
+_visor__subcmd__help__subcmd__settings__subcmd__autoupdate_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor help settings autoupdate commands' commands "$@"
 }
 (( $+functions[_visor__subcmd__help__subcmd__spaces_commands] )) ||
 _visor__subcmd__help__subcmd__spaces_commands() {
@@ -2759,6 +2854,37 @@ _visor__subcmd__pix__subcmd__help__subcmd__status_commands() {
 _visor__subcmd__pix__subcmd__status_commands() {
     local commands; commands=()
     _describe -t commands 'visor pix status commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__settings_commands] )) ||
+_visor__subcmd__settings_commands() {
+    local commands; commands=(
+'autoupdate:Show, enable, or disable automatic updates' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor settings commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__settings__subcmd__autoupdate_commands] )) ||
+_visor__subcmd__settings__subcmd__autoupdate_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor settings autoupdate commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__settings__subcmd__help_commands] )) ||
+_visor__subcmd__settings__subcmd__help_commands() {
+    local commands; commands=(
+'autoupdate:Show, enable, or disable automatic updates' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'visor settings help commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__settings__subcmd__help__subcmd__autoupdate_commands] )) ||
+_visor__subcmd__settings__subcmd__help__subcmd__autoupdate_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor settings help autoupdate commands' commands "$@"
+}
+(( $+functions[_visor__subcmd__settings__subcmd__help__subcmd__help_commands] )) ||
+_visor__subcmd__settings__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'visor settings help help commands' commands "$@"
 }
 (( $+functions[_visor__subcmd__spaces_commands] )) ||
 _visor__subcmd__spaces_commands() {
