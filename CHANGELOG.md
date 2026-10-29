@@ -5,12 +5,14 @@ people who use the CLI: what they can do now, what changed, what to watch for.
 
 ## Unreleased
 
+## 0.7.0 - 2026-10-29
+
 - **Automatic updates**, on by default, like flyctl's. On a terminal, after a command, a newer patch version installs in the background (output in `update.log` in the config directory). A new minor or major version, or one more than five patches ahead, installs before the command, which then runs in the new version. Only Homebrew and installer installs update themselves; CI, pipes, and scripts never do, and `--json` output stays clean. A failed update never stops your command, and the CLI waits an hour before trying again.
 - `visor settings autoupdate` shows the setting; `enable` and `disable` change it (`auto_update` in `config.toml`).
 - The release check now runs at most once an hour (it was once a day).
 - `visor update` checks the installed version after Homebrew or the installer, and fails if it did not change. The Homebrew tap can trail a GitHub release by a few minutes, and `brew upgrade` then succeeded without installing anything.
-
 - Pix works on the Pro plan too (10 Pix a month; Premium has 30). The help, the README, and the `PREMIUM_REQUIRED` hint said Premium only.
+- Updated tokio to 1.54.1 (a moderate advisory in `tokio::time::Interval`, which the CLI does not use).
 
 ## 0.6.0 - 2026-10-28
 
