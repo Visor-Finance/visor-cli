@@ -268,7 +268,7 @@ impl ApiError {
             }
             "CPF_REQUIRED" => format!("Add your CPF to your profile at {SETTINGS_URL}, then try again."),
             "PREMIUM_REQUIRED" => format!(
-                "See the Premium plan at {}.",
+                "Pix needs the Pro or Premium plan. See the plans at {}.",
                 self.details["url"].as_str().unwrap_or(PLAN_URL)
             ),
             "PIX_MONTHLY_LIMIT_REACHED" => {
